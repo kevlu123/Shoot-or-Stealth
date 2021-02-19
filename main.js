@@ -2,6 +2,7 @@
 let canvas;
 let gfx;
 let time = Date.now();
+let player = new Sprite("characters.png");
 
 // Queue another update with the new delta time
 function queueUpdate()
@@ -12,11 +13,14 @@ function queueUpdate()
     time = now;
 }
 
+// Update function
 function onUpdate(deltaTime)
 {
-    gfx.drawBackground([0x87, 0xCE, 0xFF]);
-    
     console.log(deltaTime);
+
+    gfx.drawBackground([0x87, 0xCE, 0xFF]);
+
+    gfx.drawSprite(player);
     
     queueUpdate();
 }
