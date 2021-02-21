@@ -37,8 +37,16 @@ class Sprite
     constructor(filename)
     {
         if (filename)
-            this.imageView = new ImageView("characters.png");
+            this.imageView = new ImageView(filename);
         this.x = 0;
         this.y = 0;
+    }
+
+    // Create a sprite from an ImageView
+    static fromImageView(imageView)
+    {
+        let sprite = new Sprite();
+        sprite.imageView = imageView;
+        return sprite;
     }
 }

@@ -13,7 +13,7 @@ class Graphics
     // Parameter colour is an an rgb array with values 0-255
     drawBackground(colour)
     {
-        this._ctx.fillStyle = this._rgb(colour);
+        this._ctx.fillStyle = Graphics._rgb(colour);
         this._ctx.fillRect(0, 0, this.width(), this.height());
     }
 
@@ -31,8 +31,8 @@ class Graphics
                 sprite.imageView.y,
                 sprite.imageView.width,
                 sprite.imageView.height,
-                sprite.x,
-                sprite.y,
+                PIXEL_SIZE * sprite.x,
+                -PIXEL_SIZE * (sprite.y + sprite.imageView.height) + this.height(),
                 sprite.imageView.width * PIXEL_SIZE,
                 sprite.imageView.height * PIXEL_SIZE,
             );
@@ -47,8 +47,8 @@ class Graphics
                 sprite.imageView.y,
                 sprite.imageView.width,
                 sprite.imageView.height,
-                -sprite.x,
-                sprite.y,
+                -PIXEL_SIZE * sprite.x,
+                -PIXEL_SIZE * (sprite.y + sprite.imageView.height) + this.height(),
                 -sprite.imageView.width * PIXEL_SIZE,
                 sprite.imageView.height * PIXEL_SIZE,
             );
@@ -69,7 +69,7 @@ class Graphics
     }
 
     // Converts an rgb array with values 0-255 to a string representing a colour
-    _rgb(colour)
+    static _rgb(colour)
     {
         return "rgb(" + colour[0] + "," + colour[1] + "," + colour[2] + ")";
     }
