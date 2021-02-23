@@ -1,6 +1,7 @@
 
 let canvas;
 let gfx;
+let input = new Input();
 let time = Date.now();
 let level;
 let player;
@@ -45,6 +46,7 @@ function onUpdate(deltaTime)
 
     drawLevel();
 
+    input.update();
     queueUpdate();
 }
 
