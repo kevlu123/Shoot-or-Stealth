@@ -26,15 +26,15 @@ class Graphics
         if (!sprite.flippedX)
         {
             this._ctx.drawImage(
-                sprite.imageView.getImage(),
-                sprite.imageView.x,
-                sprite.imageView.y,
-                sprite.imageView.width,
-                sprite.imageView.height,
-                PIXEL_SIZE * sprite.x,
-                -PIXEL_SIZE * (sprite.y + sprite.imageView.height) + this.height(),
-                sprite.imageView.width * PIXEL_SIZE,
-                sprite.imageView.height * PIXEL_SIZE,
+                sprite.getImageView().getImage(),
+                sprite.getImageView().x,
+                sprite.getImageView().y,
+                sprite.getImageView().width,
+                sprite.getImageView().height,
+                PIXEL_SIZE * Math.floor(sprite.x),
+                -PIXEL_SIZE * (Math.floor(sprite.y) + sprite.getImageView().height) + this.height(),
+                sprite.getImageView().width * PIXEL_SIZE,
+                sprite.getImageView().height * PIXEL_SIZE,
             );
         }
         else
@@ -42,15 +42,15 @@ class Graphics
             this._ctx.save();
             this._ctx.scale(-1, 1);
             this._ctx.drawImage(
-                sprite.imageView.getImage(),
-                sprite.imageView.x,
-                sprite.imageView.y,
-                sprite.imageView.width,
-                sprite.imageView.height,
-                -PIXEL_SIZE * sprite.x,
-                -PIXEL_SIZE * (sprite.y + sprite.imageView.height) + this.height(),
-                -sprite.imageView.width * PIXEL_SIZE,
-                sprite.imageView.height * PIXEL_SIZE,
+                sprite.getImageView().getImage(),
+                sprite.getImageView().x,
+                sprite.getImageView().y,
+                sprite.getImageView().width,
+                sprite.getImageView().height,
+                -PIXEL_SIZE * Math.floor(sprite.x),
+                -PIXEL_SIZE * (Math.floor(sprite.y) + sprite.getImageView().height) + this.height(),
+                -sprite.getImageView().width * PIXEL_SIZE,
+                sprite.getImageView().height * PIXEL_SIZE,
             );
             this._ctx.restore();
         }

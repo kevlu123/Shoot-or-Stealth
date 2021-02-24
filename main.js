@@ -24,9 +24,11 @@ function loadLevel(levelData)
         "characters.png",
         0, 0,
         TILE_SIZE, TILE_SIZE
-    ));
+    ), PhysicsSprite);
     player.x = TILE_SIZE * level.getStartPos()[0];
     player.y = TILE_SIZE * level.getStartPos()[1];
+    player.collidableSprites = level.getSprites();
+    player.useGravity = true;
 }
 
 function drawLevel()
@@ -42,10 +44,18 @@ function drawLevel()
 // Update function
 function onUpdate(deltaTime)
 {
-    console.log(deltaTime);
+    //console.log(deltaTime);
+
+    if (input.getKey(Key.LEFT))
+        player.velX -= MOVEMENT_SPEED;
+    if (input.getKey(Key.RIGHT))
+        player.velX += MOVEMENT_SPEED;
+    if (input.getKeyDown(Key.JUMP) && player.isGrounded())
+        player.velY = JUMP_VELOCITY;
+        
+    player.update(deltaTime);
 
     drawLevel();
-
     input.update();
     queueUpdate();
 }
