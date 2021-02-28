@@ -71,3 +71,16 @@ function signof(x)
     else
         return 0;
 }
+
+// Linear interpolation between a and b
+function lerp(a, b, interpolation)
+{
+    return (b - a) * interpolation + a;
+}
+
+// Removes an item from an array
+function removeFromArray(array, value)
+{
+    let index = array.indexOf(value);
+    array.splice(index, 1);
+}

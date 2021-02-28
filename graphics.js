@@ -7,6 +7,19 @@ class Graphics
         // Get graphics context to draw to
         this._canvas = canvas;
         this._ctx = canvas.getContext("2d");
+
+        this.x = 0;
+        this.y = 0;
+        this.target = null;
+    }
+
+    update()
+    {
+        let targetX = this.target?.x ?? 0;
+        let targetY = this.target?.y ?? 0;
+
+        this.x = lerp(this.x, targetX, CAMERA_LERP);
+        this.y = lerp(this.y, targetY, CAMERA_LERP);
     }
 
     // Fills the entire canvas with a colour.
@@ -31,8 +44,8 @@ class Graphics
                 sprite.getImageView().y,
                 sprite.getImageView().width,
                 sprite.getImageView().height,
-                PIXEL_SIZE * Math.floor(sprite.x),
-                -PIXEL_SIZE * (Math.floor(sprite.y) + sprite.getImageView().height) + this.height(),
+                PIXEL_SIZE * Math.floor(sprite.x) + this.width() / 2 - this.x * PIXEL_SIZE,
+                -PIXEL_SIZE * (Math.floor(sprite.y) + sprite.getImageView().height) + this.height() / 2 + this.y * PIXEL_SIZE,
                 sprite.getImageView().width * PIXEL_SIZE,
                 sprite.getImageView().height * PIXEL_SIZE,
             );

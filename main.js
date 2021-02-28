@@ -6,15 +6,6 @@ let time = Date.now();
 let level;
 let player;
 
-// Queue another update with the new delta time
-function queueUpdate()
-{
-    let now = Date.now();
-    let newDeltaTime = (now - time)  / 1000;
-    window.requestAnimationFrame(() => { onUpdate(newDeltaTime); });
-    time = now;
-}
-
 function loadLevel(levelData)
 {
     level = new Level(levelData);
@@ -29,6 +20,8 @@ function loadLevel(levelData)
     player.y = TILE_SIZE * level.getStartPos()[1];
     player.collidableSprites = level.getSprites();
     player.useGravity = true;
+    player.dampVelocityX = true;
+    gfx.target = player;
 }
 
 function drawLevel()
@@ -42,10 +35,8 @@ function drawLevel()
 }
 
 // Update function
-function onUpdate(deltaTime)
+function onUpdate()
 {
-    //console.log(deltaTime);
-
     if (input.getKey(Key.LEFT))
         player.velX -= MOVEMENT_SPEED;
     if (input.getKey(Key.RIGHT))
@@ -53,11 +44,11 @@ function onUpdate(deltaTime)
     if (input.getKeyDown(Key.JUMP) && player.isGrounded())
         player.velY = JUMP_VELOCITY;
         
-    player.update(deltaTime);
+    player.update();
+    gfx.update();
 
     drawLevel();
     input.update();
-    queueUpdate();
 }
 
 // Resize canvas when window resizes
@@ -78,7 +69,7 @@ function main()
     loadLevel(LEVELS[0]);
 
     onWindowResize();
-    window.requestAnimationFrame(() => { onUpdate(0.016); });
+    setInterval(onUpdate, FRAME_DURATION * 1000);
 }
 
 // Register callbacks

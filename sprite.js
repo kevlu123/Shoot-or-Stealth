@@ -187,6 +187,7 @@ class PhysicsSprite extends Sprite
         this.velX = 0;
         this.velY = 0;
         this.useGravity = false;
+        this.dampVelocityX = false;
         this.collidableSprites = []
         this.oncollision = null;
 
@@ -194,20 +195,21 @@ class PhysicsSprite extends Sprite
     }
 
     // Applies velocity and gravity and checks for collision
-    update(deltaTime)
+    update()
     {
         if (this._groundedState > 0)
-            this._groundedState -= deltaTime;
+            this._groundedState -= FRAME_DURATION;
 
         // Apply gravity
         if (this.useGravity)
-            this.velY += GRAVITY_STRENGTH * deltaTime;
+            this.velY += GRAVITY_STRENGTH;
 
         // Velocity damping
-        this.velX *= Math.pow(DAMPING_X, deltaTime);
+        if (this.dampVelocityX)
+            this.velX *= DAMPING_X;
 
         // Move in y axis
-        this.y += this.velY * deltaTime;
+        this.y += this.velY;
         let collidingWithY = this._getCollidingWith();
         if (collidingWithY.length > 0)
         {
@@ -225,7 +227,7 @@ class PhysicsSprite extends Sprite
         }
 
         // Move in X axis
-        this.x += this.velX * deltaTime;
+        this.x += this.velX;
         let collidingWithX = this._getCollidingWith();
         if (collidingWithX.length > 0)
         {
