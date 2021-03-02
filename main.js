@@ -1,27 +1,28 @@
 
+let input = new Input();
 let canvas;
 let gfx;
-let input = new Input();
-let time = Date.now();
 let level;
 let player;
+let bullets;
 
 function loadLevel(levelData)
 {
     level = new Level(levelData);
 
     // Create player
-    player = Sprite.fromImageView(new ImageView(
-        "characters.png",
-        0, 0,
-        TILE_SIZE, TILE_SIZE
-    ), PhysicsSprite);
-    player.x = TILE_SIZE * level.getStartPos()[0];
-    player.y = TILE_SIZE * level.getStartPos()[1];
+    player = new Character(
+        CharacterAtlasIndex.PLAYER_1,
+        TILE_SIZE * level.getStartPos()[0],
+        TILE_SIZE * level.getStartPos()[1],
+        GRENADE_BULLET
+    );
     player.collidableSprites = level.getSprites();
     player.useGravity = true;
     player.dampVelocityX = true;
     gfx.target = player;
+
+    bullets = new SpriteList();
 }
 
 function drawLevel()
@@ -31,23 +32,58 @@ function drawLevel()
     for (let tile of level.getSprites())
         gfx.drawSprite(tile);
 
+    for (let bullet of bullets)
+        gfx.drawSprite(bullet);
+
     gfx.drawSprite(player);
+}
+
+function playerShoot()
+{
+    let bullet = player.shoot();
+    if (bullet)
+    {
+        bullet.collidableSprites = level.getSprites();
+        bullet.oncollision = () => bullet.destroy();
+        bullets.push(bullet);
+    }
 }
 
 // Update function
 function onUpdate()
 {
+    // Control player
     if (input.getKey(Key.LEFT))
+    {
         player.velX -= MOVEMENT_SPEED;
+        player.flippedX = true;
+    }
     if (input.getKey(Key.RIGHT))
+    {
         player.velX += MOVEMENT_SPEED;
+        player.flippedX = false;
+    }
     if (input.getKeyDown(Key.JUMP) && player.isGrounded())
         player.velY = JUMP_VELOCITY;
-        
-    player.update();
-    gfx.update();
 
+    // Shoot
+    if (input.getKey(Key.SHOOT))
+        playerShoot();
+
+    // Update camera position and draw frame
+    gfx.update();
     drawLevel();
+
+    // Update physics sprites
+    player.update();
+    for (let bullet of bullets)
+    {
+        bullet.update();
+        if (!bullet.isActive())
+            bullet.destroy();
+    }
+
+    // Update input
     input.update();
 }
 

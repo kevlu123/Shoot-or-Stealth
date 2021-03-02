@@ -41,15 +41,6 @@ class Rect
     }
 }
 
-// Python's list comprehension
-function listComp(iterable, selector)
-{
-    let li = [];
-    for (let x of iterable)
-        li.push(selector(x));
-    return li;
-}
-
 // Clamps x between min and max
 function clamp(x, min, max)
 {
@@ -83,4 +74,9 @@ function removeFromArray(array, value)
 {
     let index = array.indexOf(value);
     array.splice(index, 1);
+}
+
+function randInt(min, maxExcl)
+{
+    return Math.floor(Math.random() * (maxExcl - min) + min);
 }

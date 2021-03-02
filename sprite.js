@@ -8,7 +8,6 @@ class ImageView
         this.y = y ?? 0;
         this.width = w;
         this.height = h;
-        this.flippedX = false;
 
         // Load image
         this._image = new Image();
@@ -17,6 +16,19 @@ class ImageView
 
         // Wait for image to load
         while (this.width === undefined) {}
+    }
+
+    // Create an ImageView from a single row sprite atlas.
+    // Sprites must be TILE_SIZE by TILE_SIZE resolution.
+    static fromAtlas(filename, index)
+    {
+        return new ImageView(
+            filename,
+            TILE_SIZE * index,
+            0,
+            TILE_SIZE,
+            TILE_SIZE
+        );
     }
 
     // Get full underlying image
@@ -36,6 +48,34 @@ class ImageView
     }
 }
 
+// Unordered collection of sprites
+class SpriteList
+{
+    constructor(sprites=[])
+    {
+        this._sprites = sprites;
+    }
+
+    // Allow use in for...of loop
+    [Symbol.iterator]()
+    {
+        return this._sprites.values();
+    }
+
+    // Add sprite to list
+    push(sprite)
+    {
+        this._sprites.push(sprite);
+        sprite._spriteLists.push(this);
+    }
+
+    // Returns a new SpriteList from sprites in this list which satisfy a predicate
+    filter(predicate)
+    {
+        return new SpriteList(this._sprites.filter(predicate));
+    }
+}
+
 // Represents a 2D image in space
 class Sprite
 {
@@ -48,6 +88,8 @@ class Sprite
 
         this.x = 0;
         this.y = 0;
+        this.flippedX = false;
+        this._spriteLists = [];
     }
 
     // Create a sprite of type spriteClass from an ImageView
@@ -56,6 +98,13 @@ class Sprite
         let sprite = new spriteClass();
         sprite.setImageView(imageView);
         return sprite;
+    }
+
+    destroy()
+    {
+        for (let list of this._spriteLists)
+            removeFromArray(list._sprites, this);
+        this._spriteLists = [];
     }
 
     getImageView()
@@ -67,22 +116,22 @@ class Sprite
     {
         this._imageView = imageView;
         this.setRectangularHitbox(
-            -imageView.width / 2,
-            imageView.width / 2,
-            -imageView.height / 2,
-            imageView.height / 2,
+            0,
+            imageView.width,
+            0,
+            imageView.height
         );
     }
 
     // Set an axis aligned rectangular hitbox relative to the pivot
-    setRectangularHitbox(left, right, top, bottom)
+    setRectangularHitbox(left, right, bottom, top)
     {
         this._hasCircularHitbox = false;
         this._hitbox = new Rect(
             left,
-            top,
+            bottom,
             right - left,
-            bottom - top
+            top - bottom
         );
     }
 
@@ -96,6 +145,10 @@ class Sprite
     // Checks for collision with another sprite
     checkCollisionWithSprite(sprite)
     {
+        // Can't collide with self
+        if (sprite === this)
+            return false;
+
         let thisX = Math.floor(this.x);
         let thisY = Math.floor(this.y);
         let spriteX = Math.floor(sprite.x);
@@ -188,7 +241,8 @@ class PhysicsSprite extends Sprite
         this.velY = 0;
         this.useGravity = false;
         this.dampVelocityX = false;
-        this.collidableSprites = []
+        this.collidableSprites = [];
+        this.uncollidableSprites = []; // Overrides collidableSprites
         this.oncollision = null;
 
         this._groundedState = 0;
@@ -208,36 +262,45 @@ class PhysicsSprite extends Sprite
         if (this.dampVelocityX)
             this.velX *= DAMPING_X;
 
+        let collidingWithX = [];
+        let collidingWithY = [];
+
         // Move in y axis
-        this.y += this.velY;
-        let collidingWithY = this._getCollidingWith();
-        if (collidingWithY.length > 0)
+        if (this.velY !== 0)
         {
-            // If collided, reset velocity and move back until not colliding
-            let velSign = signof(this.velY);
-            this.velY = 0;
-            do
+            this.y += this.velY;
+            collidingWithY = this._getCollidingWith();
+            if (collidingWithY.length > 0)
             {
-                this.y -= velSign;
-            } while (this._isColliding());
-            
-            // If collided while moving down, the sprite is grounded
-            if (velSign < 0)
-                this._groundedState = COYOTE_JUMP_TIME;
+                // If collided, reset velocity and move back until not colliding
+                let velSign = signof(this.velY);
+                this.velY = 0;
+                do
+                {
+                    this.y -= velSign;
+                } while (this._isColliding());
+                
+                // If collided while moving down, the sprite is grounded
+                if (velSign < 0)
+                    this._groundedState = COYOTE_JUMP_TIME;
+            }
         }
 
         // Move in X axis
-        this.x += this.velX;
-        let collidingWithX = this._getCollidingWith();
-        if (collidingWithX.length > 0)
+        if (this.velX)
         {
-            // If collided, reset velocity and move back until not colliding
-            let velSign = signof(this.velX);
-            this.velX = 0;
-            do
+            this.x += this.velX;
+            collidingWithX = this._getCollidingWith();
+            if (collidingWithX.length > 0)
             {
-                this.x -= velSign;
-            } while (this._isColliding());
+                // If collided, reset velocity and move back until not colliding
+                let velSign = signof(this.velX);
+                this.velX = 0;
+                do
+                {
+                    this.x -= velSign;
+                } while (this._isColliding());
+            }
         }
 
         // Call oncollision event
@@ -248,6 +311,14 @@ class PhysicsSprite extends Sprite
             if (collidingWith.length > 0)
                 this.oncollision(collidingWith);
         }
+    }
+
+    checkCollisionWithSprite(sprite)
+    {
+        if (this.uncollidableSprites.includes(sprite))
+            return false;
+        else
+            return super.checkCollisionWithSprite(sprite);
     }
 
     isGrounded()

@@ -60,8 +60,8 @@ class Graphics
                 sprite.getImageView().y,
                 sprite.getImageView().width,
                 sprite.getImageView().height,
-                -PIXEL_SIZE * Math.floor(sprite.x),
-                -PIXEL_SIZE * (Math.floor(sprite.y) + sprite.getImageView().height) + this.height(),
+                -(PIXEL_SIZE * Math.floor(sprite.x) + this.width() / 2 - this.x * PIXEL_SIZE),
+                - PIXEL_SIZE * (Math.floor(sprite.y) + sprite.getImageView().height) + this.height() / 2 + this.y * PIXEL_SIZE,
                 -sprite.getImageView().width * PIXEL_SIZE,
                 sprite.getImageView().height * PIXEL_SIZE,
             );
