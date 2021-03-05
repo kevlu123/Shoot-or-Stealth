@@ -14,12 +14,11 @@ function loadLevel(levelData)
     player = new Character(
         CharacterAtlasIndex.PLAYER_1,
         TILE_SIZE * level.getStartPos()[0],
-        TILE_SIZE * level.getStartPos()[1],
-        GRENADE_BULLET
+        TILE_SIZE * level.getStartPos()[1]
     );
     player.collidableSprites = level.getSprites();
     player.useGravity = true;
-    player.dampVelocityX = true;
+    player.dampingX = PLAYER_DAMPING_X;
     gfx.target = player;
 
     bullets = new SpriteList();
@@ -38,15 +37,30 @@ function drawLevel()
     gfx.drawSprite(player);
 }
 
-function playerShoot()
+function playerShoot(isGrenade)
 {
-    let bullet = player.shoot();
-    if (bullet)
+    let bullet;
+    if (isGrenade)
+        bullet = player.shoot(GRENADE_BULLET);
+    else
+        bullet = player.shoot();
+
+    if (bullet !== null)
     {
         bullet.collidableSprites = level.getSprites();
-        bullet.oncollision = () => bullet.destroy();
+
+        // If bullet spawned inside a wall, move out of wall
+        while (bullet.isColliding())
+            bullet.x -= signof(bullet.velX);
+
         bullets.push(bullet);
     }
+}
+
+// Check if bullet collided with plaayer or enemy
+function onBulletCollision(collidedWith)
+{
+
 }
 
 // Update function
@@ -55,12 +69,12 @@ function onUpdate()
     // Control player
     if (input.getKey(Key.LEFT))
     {
-        player.velX -= MOVEMENT_SPEED;
+        player.velX -= PLAYER_SPEED;
         player.flippedX = true;
     }
     if (input.getKey(Key.RIGHT))
     {
-        player.velX += MOVEMENT_SPEED;
+        player.velX += PLAYER_SPEED;
         player.flippedX = false;
     }
     if (input.getKeyDown(Key.JUMP) && player.isGrounded())
@@ -69,6 +83,23 @@ function onUpdate()
     // Shoot
     if (input.getKey(Key.SHOOT))
         playerShoot();
+
+    // Throw grenade
+    if (input.getKeyDown(Key.GRENADE))
+        playerShoot(GRENADE_BULLET);
+
+    // Switch weapon
+    if (input.getKeyDown(Key.SWITCH_WEAPON_L) || input.getKeyDown(Key.SWITCH_WEAPON_R))
+    {
+        let incr = input.getKeyDown(Key.SWITCH_WEAPON_R) ? 1 : -1;
+        player.bulletType = PRIMARY_BULLET_TYPES[wrappedIncrement(
+            PRIMARY_BULLET_TYPES.indexOf(player.bulletType),
+            incr,
+            0,
+            PRIMARY_BULLET_TYPES.length
+        )];
+    }
+    
 
     // Update camera position and draw frame
     gfx.update();

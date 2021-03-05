@@ -1,4 +1,24 @@
 
+class Circle
+{
+    constructor(x, y, r)
+    {
+        this.x = x;
+        this.y = y;
+        this.r = r;
+    }
+
+    // Creates a copy of this object
+    clone()
+    {
+        return new Circle(
+            this.x,
+            this.y,
+            this.r
+        );
+    }
+}
+
 class Rect
 {
     constructor(x, y, w, h)
@@ -79,4 +99,10 @@ function removeFromArray(array, value)
 function randInt(min, maxExcl)
 {
     return Math.floor(Math.random() * (maxExcl - min) + min);
+}
+
+// Returns incr added to val, wrapped around a range
+function wrappedIncrement(val, incr, min, maxExcl)
+{
+    return (val + incr) % (maxExcl - min) + min;
 }

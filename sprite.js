@@ -81,6 +81,7 @@ class Sprite
 {
     constructor(filename)
     {
+        this._imageView = null;
         if (filename)
             this.setImageView(new ImageView(filename));
         else
@@ -135,11 +136,11 @@ class Sprite
         );
     }
 
-    // Set a circular hitbox around the pivot
-    setCircularHitbox(radius)
+    // Set a circular hitbox
+    setCircularHitbox(x, y, r)
     {
         this._hasCircularHitbox = true;
-        this._hitbox = radius;
+        this._hitbox = new Circle(x, y, r);
     }
 
     // Checks for collision with another sprite
@@ -171,24 +172,28 @@ class Sprite
         else if (this._hasCircularHitbox && sprite._hasCircularHitbox)
         {
             // Circle/Circle
+            thisX += this._hitbox.x;
+            thisY += this._hitbox.y;
+            spriteX += this._hitbox.x;
+            spriteY += this._hitbox.y;
             let distSq = (thisX - spriteX) ** 2 + (thisY - spriteY) ** 2;
-            return distSq < (this._hitbox + sprite._hitbox) ** 2;
+            return distSq < (this._hitbox.r + sprite._hitbox.r) ** 2;
         }
         else
         {
             // Rectangle/Circle
 
             let rect;
-            let radius, circX, circY;
+            let circle;
             if (sprite._hasCircularHitbox)
             {
                 rect = this._hitbox.clone();
                 rect.x += thisX;
                 rect.y += thisY;
 
-                radius = sprite._hitbox;
-                circX = spriteX;
-                circY = spriteY;
+                circle = sprite._hitbox.clone();
+                circle.x += spriteX;
+                circle.y += spriteY;
             }
             else
             {
@@ -196,18 +201,18 @@ class Sprite
                 rect.x += spriteX;
                 rect.y += spriteY;
 
-                radius = this._hitbox;
-                circX = thisX;
-                circY = thisY;
+                circle = this._hitbox.clone();
+                circle.x += thisX;
+                circle.y += thisY;
             }
 
             // Find the nearest point in the rectangle to the circle
-            let nearestX = clamp(circX, rect.left(), rect.right());
-            let nearestY = clamp(circY, rect.top(), rect.bottom());
+            let nearestX = clamp(circle.x, rect.left(), rect.right());
+            let nearestY = clamp(circle.y, rect.top(), rect.bottom());
 
             // If this point is inside the circle, there is a collision
-            let distSq = (circX - nearestX) ** 2 + (circY - nearestY) ** 2;
-            return distSq < radius ** 2;
+            let distSq = (circle.x - nearestX) ** 2 + (circle.y - nearestY) ** 2;
+            return distSq < circle.r ** 2;
         }
     }
 
@@ -237,13 +242,30 @@ class PhysicsSprite extends Sprite
     constructor(filename)
     {
         super(filename);
+
+        // Translational properties
         this.velX = 0;
         this.velY = 0;
+        this.dampingX = 1;
+        this.dampingY = 1;
+        this.bouncynessX = 0;
+        this.bouncynessY = 0;
         this.useGravity = false;
-        this.dampVelocityX = false;
+
+        // Rotational properties
+        this.rotationPivotX = 0;
+        this.rotationPivotY = 0;
+        this.angle = 0;
+        this.angularVel = 0;
+        this.angularDamping = 1;
+        
+        // Collision properties
         this.collidableSprites = [];
-        this.uncollidableSprites = []; // Overrides collidableSprites
+        this.uncollidableSprites = []; // Takes priority over collidableSprites
         this.oncollision = null;
+        this.collisionDampingX = 1;
+        this.collisionDampingY = 1;
+        this.angularCollisionDamping = 1;
 
         this._groundedState = 0;
     }
@@ -258,59 +280,87 @@ class PhysicsSprite extends Sprite
         if (this.useGravity)
             this.velY += GRAVITY_STRENGTH;
 
-        // Velocity damping
-        if (this.dampVelocityX)
-            this.velX *= DAMPING_X;
+        // Velocity and angular velocity damping
+        this.velX *= this.dampingX;
+        this.velY *= this.dampingY;
+        this.angularVel *= this.angularDamping;
 
         let collidingWithX = [];
         let collidingWithY = [];
 
         // Move in y axis
+        let velYSign = signof(this.velY);
         if (this.velY !== 0)
         {
             this.y += this.velY;
-            collidingWithY = this._getCollidingWith();
+            collidingWithY = this.getCollidingWith();
             if (collidingWithY.length > 0)
             {
-                // If collided, reset velocity and move back until not colliding
-                let velSign = signof(this.velY);
-                this.velY = 0;
+                // If collided and move back until not colliding
                 do
                 {
-                    this.y -= velSign;
-                } while (this._isColliding());
+                    this.y -= velYSign;
+                } while (this.isColliding());
                 
                 // If collided while moving down, the sprite is grounded
-                if (velSign < 0)
+                if (velYSign < 0)
                     this._groundedState = COYOTE_JUMP_TIME;
+
+                // Bounce off
+                this.velY *= -this.bouncynessY;
             }
         }
 
         // Move in X axis
+        let velXSign = signof(this.velX);
         if (this.velX)
         {
             this.x += this.velX;
-            collidingWithX = this._getCollidingWith();
+            collidingWithX = this.getCollidingWith();
             if (collidingWithX.length > 0)
             {
-                // If collided, reset velocity and move back until not colliding
-                let velSign = signof(this.velX);
-                this.velX = 0;
+                // If collided and move back until not colliding
                 do
                 {
-                    this.x -= velSign;
-                } while (this._isColliding());
+                    this.x -= velXSign;
+                } while (this.isColliding());
+                
+                // Bounce off
+                this.velX *= -this.bouncynessX;
             }
         }
+        
+        // Apply angular velocity
+        this.angle += this.angularVel;
 
-        // Call oncollision event
-        if (this.oncollision !== null)
+        // Collisions
+        let collidingWith = [];
+        collidingWith.push(...collidingWithX);
+        collidingWith.push(...collidingWithY);
+        if (collidingWith.length > 0)
         {
-            let collidingWith = collidingWithX;
-            collidingWith.push(...collidingWithY);
-            if (collidingWith.length > 0)
+            // Apply collision damping
+            this.velX *= this.collisionDampingX;
+            this.velY *= this.collisionDampingY;
+            this.angularVel *= this.angularCollisionDamping;
+            
+            // Reverse rotation if rotating against a surface
+            if (collidingWithX.length > 0 && (velXSign > 0) != (signof(this.angularVel) !== velYSign))
+                this.angularVel *= -1;
+            else if (collidingWithY.length > 0 && (velYSign > 0) != (signof(this.angularVel) === velXSign))
+                this.angularVel *= -1;
+
+            // Call oncollision event
+            if (this.oncollision !== null)
                 this.oncollision(collidingWith);
         }
+    }
+
+    setImageView(imageView)
+    {
+        super.setImageView(imageView);
+        this.rotationPivotX = imageView.width / 2;
+        this.rotationPivotY = imageView.height / 2;
     }
 
     checkCollisionWithSprite(sprite)
@@ -327,13 +377,13 @@ class PhysicsSprite extends Sprite
     }
 
     // Checks if this sprite is colliding with any of collidableSprites
-    _isColliding()
+    isColliding()
     {
         return this.checkCollisionWithSprites(this.collidableSprites);
     }
 
     // Gets the sprites which are coliding with this
-    _getCollidingWith()
+    getCollidingWith()
     {
         return this.getCollisionWithSprites(this.collidableSprites);
     }

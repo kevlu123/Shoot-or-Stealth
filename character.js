@@ -6,8 +6,8 @@ class Character extends PhysicsSprite
     {
         super();
 
-        this._bulletType = bulletType;
-        this._timeSinceShot = bulletType.cooldown;
+        this._timesSinceShot = new Map(); // Keep track of each bullet type
+        this.bulletType = bulletType;
         this.x = x;
         this.y = y;
         this.useGravity = bulletType.useGravity;
@@ -25,47 +25,73 @@ class Character extends PhysicsSprite
     {
         super.update();
 
-        this._timeSinceShot += FRAME_DURATION;
+        // Add delta time to each value in _timesSinceShot
+        let entries = Array.from(this._timesSinceShot.entries());
+        for (let [key, val] of entries)
+            this._timesSinceShot.set(key, val + FRAME_DURATION);
     }
 
     // Returns a bullet if cooldown has passed, otherwise null
-    shoot()
+    shoot(bulletType=this.bulletType)
     {
-        if (this._timeSinceShot <= this._bulletType.cooldown)
+        if (this._timesSinceShot.has(bulletType) && this._timesSinceShot.get(bulletType) <= bulletType.cooldown)
             return null;
-        this._timeSinceShot = 0;
-
+        this._timesSinceShot.set(bulletType, 0);
+        
         // Get spawn position
         let spawnX = this.x;
-        let spawnY = this.y + 2 + randInt(-1, 2);
+        let spawnY = this.y + 2 + randInt(0, bulletType.spread) - bulletType.spread / 2;
         if (this.flippedX)
-            spawnX -= TILE_SIZE / 2;
+            spawnX -= TILE_SIZE;
         else
-            spawnX += TILE_SIZE / 2;
+            spawnX += TILE_SIZE;
     
         // Create bullet
         let bullet = new Bullet(
             this,
-            this._bulletType.atlasIndex,
+            bulletType.atlasIndex,
             spawnX,
-            spawnY
+            spawnY,
+            bulletType.damage,
+            bulletType.range
         );
-        
-        bullet.useGravity = this._bulletType.useGravity;
+        bullet.flippedX = this.flippedX;
+
+        // Set oncollision callback
+        bullet.oncollision = function(collidedWith)
+        {
+            onBulletCollision(collidedWith);
+            bulletType.oncollision(bullet);
+        };
 
         // Set hitbox
-        if (this._bulletType.useCircularHitbox)
-            bullet.setCircularHitbox(this._bulletType.hitbox);
+        if (bulletType.useCircularHitbox)
+            bullet.setCircularHitbox(...bulletType.hitbox);
         else
-            bullet.setRectangularHitbox(...this._bulletType.hitbox);
+            bullet.setRectangularHitbox(...bulletType.hitbox);
     
         // Set initial velocity
-        bullet.velY = this._bulletType.velY;
+        bullet.velY = bulletType.velY;
         if (this.flippedX)
-            bullet.velX = -this._bulletType.velX;
+            bullet.velX = -bulletType.velX;
         else
-            bullet.velX = this._bulletType.velX;
+            bullet.velX = bulletType.velX;
     
+        // Set physics properties
+        if (bulletType.usePhysics)
+        {
+            bullet.flippedX = false;
+            bullet.useGravity = true;
+            bullet.bouncynessX = bulletType.bouncyness;
+            bullet.bouncynessY = bulletType.bouncyness;
+            bullet.collisionDampingX = BULLET_COLLISION_DAMPING;
+
+            bullet.rotationPivotX = bulletType.hitbox[0];
+            bullet.rotationPivotY = bulletType.hitbox[1];
+            bullet.angularVel = signof(bullet.velX) * BULLET_ANGULAR_VELOCITY;
+            bullet.angularDamping = BULLET_ANGULAR_DAMPING;
+        }
+
         return bullet;
     }
 }

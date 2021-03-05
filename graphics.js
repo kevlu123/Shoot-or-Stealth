@@ -36,37 +36,55 @@ class Graphics
         // Disable antialiasing before drawing
         this._ctx.imageSmoothingEnabled = false;
 
-        if (!sprite.flippedX)
+        let imageView = sprite.getImageView();
+        let dstX =  PIXEL_SIZE * (Math.floor(sprite.x) - this.x) + this.width() / 2;
+        let dstY = -PIXEL_SIZE * (Math.floor(sprite.y) - this.y + imageView.height) + this.height() / 2;
+        let dstW =  PIXEL_SIZE * imageView.width;
+        let ctxSaved = false;
+
+        // Rotate sprite
+        if (sprite.angle)
         {
-            this._ctx.drawImage(
-                sprite.getImageView().getImage(),
-                sprite.getImageView().x,
-                sprite.getImageView().y,
-                sprite.getImageView().width,
-                sprite.getImageView().height,
-                PIXEL_SIZE * Math.floor(sprite.x) + this.width() / 2 - this.x * PIXEL_SIZE,
-                -PIXEL_SIZE * (Math.floor(sprite.y) + sprite.getImageView().height) + this.height() / 2 + this.y * PIXEL_SIZE,
-                sprite.getImageView().width * PIXEL_SIZE,
-                sprite.getImageView().height * PIXEL_SIZE,
-            );
-        }
-        else
-        {
+            ctxSaved = true;
             this._ctx.save();
-            this._ctx.scale(-1, 1);
-            this._ctx.drawImage(
-                sprite.getImageView().getImage(),
-                sprite.getImageView().x,
-                sprite.getImageView().y,
-                sprite.getImageView().width,
-                sprite.getImageView().height,
-                -(PIXEL_SIZE * Math.floor(sprite.x) + this.width() / 2 - this.x * PIXEL_SIZE),
-                - PIXEL_SIZE * (Math.floor(sprite.y) + sprite.getImageView().height) + this.height() / 2 + this.y * PIXEL_SIZE,
-                -sprite.getImageView().width * PIXEL_SIZE,
-                sprite.getImageView().height * PIXEL_SIZE,
+            this._ctx.translate(
+                dstX + PIXEL_SIZE * sprite.rotationPivotX,
+                dstY + PIXEL_SIZE * (imageView.height - sprite.rotationPivotY - 1)
             );
-            this._ctx.restore();
+            this._ctx.rotate(-sprite.angle);
+            dstX = -PIXEL_SIZE * sprite.rotationPivotX;
+            dstY = -PIXEL_SIZE * (imageView.height - sprite.rotationPivotY - 1);
         }
+        
+        // Horizontally mirror sprite
+        if (sprite.flippedX)
+        {
+            if (!ctxSaved)
+            {
+                ctxSaved = true;
+                this._ctx.save();
+            }
+            this._ctx.scale(-1, 1);
+            dstX *= -1;
+            dstW *= -1;
+        }
+
+        // Draw image
+        this._ctx.drawImage(
+            sprite.getImageView().getImage(),
+            sprite.getImageView().x,
+            sprite.getImageView().y,
+            sprite.getImageView().width,
+            sprite.getImageView().height,
+            dstX,
+            dstY,
+            dstW,
+            sprite.getImageView().height * PIXEL_SIZE,
+        );
+
+        // Revert canvas transformations
+        if (ctxSaved)
+            this._ctx.restore();
     }
 
     // Get the width of the canvas
