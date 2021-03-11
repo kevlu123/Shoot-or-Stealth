@@ -21,13 +21,12 @@ class Level
         this._endPos = [1, 0];
 
         // Load each tile
-        this._sprites = new SpriteList();
         for (let y = 0; y < this._height; y++)
             for (let x = 0; x < this._width; x++)
             {
                 let tileIndex = null;
-
-                switch (lines[y][x])
+                let c = lines[y][x];
+                switch (c)
                 {
                     case '.': tileIndex = TileAtlasIndex.WALL; break;
                     case '_': tileIndex = TileAtlasIndex.SURFACE; break;
@@ -41,6 +40,43 @@ class Level
                         // Set finish position
                         this._endPos = [x, y];
                         break;
+
+                    case '1':
+                        {
+                            // Enemy 1
+                            let enemy = new Enemy(
+                                CharacterAtlasIndex.ENEMY_1_1,
+                                TILE_SIZE * x,
+                                TILE_SIZE * y,
+                                DEFAULT_BULLET
+                            );
+                            enemies.push(enemy);
+                            break;
+                        }
+                    case '2':
+                        {
+                            // Enemy 2
+                            let enemy = new Enemy(
+                                CharacterAtlasIndex.ENEMY_1_1,
+                                TILE_SIZE * x,
+                                TILE_SIZE * y,
+                                FAST_BULLET
+                            );
+                            enemies.push(enemy);
+                            break;
+                        }
+                    case '3':
+                        {
+                            // Enemy 3
+                            let enemy = new Enemy(
+                                CharacterAtlasIndex.ENEMY_1_1,
+                                TILE_SIZE * x,
+                                TILE_SIZE * y,
+                                SNIPER_BULLET
+                            );
+                            enemies.push(enemy);
+                            break;
+                        }
                 }
 
                 if (tileIndex !== null)
@@ -48,14 +84,9 @@ class Level
                     let tile = Sprite.fromImageView(ImageView.fromAtlas(TILE_ATLAS_FILENAME, tileIndex));
                     tile.x = TILE_SIZE * x;
                     tile.y = TILE_SIZE * y;
-                    this._sprites.push(tile);
+                    levelTiles.push(tile);
                 }
             }
-    }
-
-    getSprites()
-    {
-        return this._sprites;
     }
 
     getStartPos()

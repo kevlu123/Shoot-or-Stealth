@@ -54,6 +54,7 @@ class SpriteList
     constructor(sprites=[])
     {
         this._sprites = sprites;
+        this.length = sprites.length;
     }
 
     // Allow use in for...of loop
@@ -62,17 +63,35 @@ class SpriteList
         return this._sprites.values();
     }
 
-    // Add sprite to list
-    push(sprite)
+    // Get sprite by index
+    get(index)
     {
-        this._sprites.push(sprite);
-        sprite._spriteLists.push(this);
+        return this._sprites[index];
     }
 
-    // Returns a new SpriteList from sprites in this list which satisfy a predicate
+    // Array methods
+
+    push(...sprites)
+    {
+        this._sprites.push(...sprites);
+        for (let sprite of sprites)
+            sprite._spriteLists.push(this);
+        this.length += sprites.length;
+    }
+
     filter(predicate)
     {
         return new SpriteList(this._sprites.filter(predicate));
+    }
+
+    includes(sprite)
+    {
+        return this._sprites.includes(sprite);
+    }
+
+    some(predicate)
+    {
+        return this._sprites.some(predicate);
     }
 }
 
@@ -228,11 +247,8 @@ class Sprite
     // Returns a list of sprites which are colliding with this
     getCollisionWithSprites(sprites)
     {
-        let colliding = [];
-        for (let sprite of sprites)
-            if (this.checkCollisionWithSprite(sprite))
-                colliding.push(sprite);
-        return colliding;
+        let self = this;
+        return sprites.filter(sprite => self.checkCollisionWithSprite(sprite));
     }
 }
 
@@ -260,8 +276,7 @@ class PhysicsSprite extends Sprite
         this.angularDamping = 1;
         
         // Collision properties
-        this.collidableSprites = [];
-        this.uncollidableSprites = []; // Takes priority over collidableSprites
+        this._collidableSpriteLists = [levelTiles];
         this.oncollision = null;
         this.collisionDampingX = 1;
         this.collisionDampingY = 1;
@@ -279,11 +294,6 @@ class PhysicsSprite extends Sprite
         // Apply gravity
         if (this.useGravity)
             this.velY += GRAVITY_STRENGTH;
-
-        // Velocity and angular velocity damping
-        this.velX *= this.dampingX;
-        this.velY *= this.dampingY;
-        this.angularVel *= this.angularDamping;
 
         let collidingWithX = [];
         let collidingWithY = [];
@@ -333,6 +343,11 @@ class PhysicsSprite extends Sprite
         // Apply angular velocity
         this.angle += this.angularVel;
 
+        // Velocity and angular velocity damping
+        this.velX *= this.dampingX;
+        this.velY *= this.dampingY;
+        this.angularVel *= this.angularDamping;
+
         // Collisions
         let collidingWith = [];
         collidingWith.push(...collidingWithX);
@@ -356,19 +371,16 @@ class PhysicsSprite extends Sprite
         }
     }
 
+    addCollidableSpriteList(...spriteLists)
+    {
+        this._collidableSpriteLists.push(...spriteLists);
+    }
+
     setImageView(imageView)
     {
         super.setImageView(imageView);
         this.rotationPivotX = imageView.width / 2;
         this.rotationPivotY = imageView.height / 2;
-    }
-
-    checkCollisionWithSprite(sprite)
-    {
-        if (this.uncollidableSprites.includes(sprite))
-            return false;
-        else
-            return super.checkCollisionWithSprite(sprite);
     }
 
     isGrounded()
@@ -379,12 +391,16 @@ class PhysicsSprite extends Sprite
     // Checks if this sprite is colliding with any of collidableSprites
     isColliding()
     {
-        return this.checkCollisionWithSprites(this.collidableSprites);
+        let self = this;
+        return this._collidableSpriteLists.some(list => self.checkCollisionWithSprites(list));
     }
 
     // Gets the sprites which are coliding with this
     getCollidingWith()
     {
-        return this.getCollisionWithSprites(this.collidableSprites);
+        let hits = new SpriteList();
+        for (let list of this._collidableSpriteLists)
+            hits.push(...this.getCollisionWithSprites(list));
+        return hits;
     }
 }

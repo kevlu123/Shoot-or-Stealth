@@ -101,8 +101,55 @@ function randInt(min, maxExcl)
     return Math.floor(Math.random() * (maxExcl - min) + min);
 }
 
+function randFloat(min, maxExcl)
+{
+    return Math.random() * (maxExcl - min) + min;
+}
+
+function randBool()
+{
+    return randInt(0, 2) === 1;
+}
+
 // Returns incr added to val, wrapped around a range
 function wrappedIncrement(val, incr, min, maxExcl)
 {
     return (val + incr) % (maxExcl - min) + min;
+}
+
+// Get the current time in seconds since epoch
+function now()
+{
+    return Date.now() / 1000;
+}
+
+// Casts a ray and gets a list of sprites that the ray hits
+function raycast(srcX, srcY, angle, collidableSpriteLists, range=100, step=4)
+{
+    // Calculate direction vector
+    let dirX = Math.cos(angle);
+    let dirY = Math.sin(angle);
+    
+    // Create sprite for collision test
+    let ray = new PhysicsSprite();
+    ray.setCircularHitbox(0, 0, 0.01);
+    ray.addCollidableSpriteList(...collidableSpriteLists);
+
+    let hits = new SpriteList();
+    let dist = 0;
+    do
+    {
+        // Get current ray position
+        ray.x = srcX + dist * dirX;
+        ray.y = srcY + dist * dirY;
+
+        // Check collision
+        hits = ray.getCollidingWith();
+
+        // Move ray
+        dist += step;
+    }
+    while (hits.length === 0 && dist < range);
+
+    return hits;
 }

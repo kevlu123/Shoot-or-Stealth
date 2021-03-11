@@ -17,8 +17,21 @@ const EXPLOSION_DAMAGE = 10;
 
 // Player physics
 const PLAYER_DAMPING_X = 0.9;
-const PLAYER_SPEED = 0.5;
+const PLAYER_WALK_SPEED = 0.5;
+const ENEMY_DAMPING_X = 0.8;
+const ENEMY_WALK_SPEED = 0.4;
 const JUMP_VELOCITY = 8;
+
+// Enemy AI
+const ENEMY_WALK_INTERVAL_MIN = 0.5;
+const ENEMY_WALK_INTERVAL_MAX = 3;
+const ENEMY_WALK_DURATION_MIN = 0.3;
+const ENEMY_WALK_DURATION_MAX = 0.7;
+const ENEMY_SHOOT_INTERVAL_MIN = 0.5;
+const ENEMY_SHOOT_INTERVAL_MAX = 3;
+const ENEMY_SHOOT_DURATION_MIN = 0.3;
+const ENEMY_SHOOT_DURATION_MAX = 0.7;
+const ENEMY_RAYCAST_ANGLE = Math.PI / 3;
 
 // Other settings
 const GRAVITY_STRENGTH = -0.4;
@@ -45,6 +58,7 @@ class Key
 class CharacterAtlasIndex
 {
     static PLAYER_1 = 0;
+    static ENEMY_1_1 = 9;
 }
 
 class TileAtlasIndex
@@ -85,7 +99,7 @@ const FAST_BULLET = {
     damage: 15 / 16, // 15 DPS
     velX: 12,
     velY: 0,
-    range: 10 * TILE_SIZE,
+    range: 8 * TILE_SIZE,
     spread: 8,
     usePhysics: false,
     bouncyness: null,
