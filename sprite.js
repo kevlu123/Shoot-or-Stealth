@@ -18,16 +18,15 @@ class ImageView
         while (this.width === undefined) {}
     }
 
-    // Create an ImageView from a single row sprite atlas.
-    // Sprites must be TILE_SIZE by TILE_SIZE resolution.
-    static fromAtlas(filename, index)
+    // Create an ImageView from a single row sprite atlas with a height of TILE_SIZE.
+    static fromAtlas(filename, index, xOffset=0, yOffset=0, width=TILE_SIZE, height=TILE_SIZE)
     {
         return new ImageView(
             filename,
-            TILE_SIZE * index,
-            0,
-            TILE_SIZE,
-            TILE_SIZE
+            TILE_SIZE * index + xOffset,
+            yOffset,
+            width,
+            height
         );
     }
 
@@ -48,7 +47,7 @@ class ImageView
     }
 }
 
-// Unordered collection of sprites
+// Collection of sprites
 class SpriteList
 {
     constructor(sprites=[])
@@ -75,7 +74,8 @@ class SpriteList
     {
         this._sprites.push(...sprites);
         for (let sprite of sprites)
-            sprite._spriteLists.push(this);
+            if (!sprite._destroyed)
+                sprite._spriteLists.push(this);
         this.length += sprites.length;
     }
 
@@ -108,8 +108,12 @@ class Sprite
 
         this.x = 0;
         this.y = 0;
+        this.angle = 0;
+        this.rotationPivotX = 0;
+        this.rotationPivotY = 0;
         this.flippedX = false;
         this._spriteLists = [];
+        this._destroyed = false;
     }
 
     // Create a sprite of type spriteClass from an ImageView
@@ -123,8 +127,12 @@ class Sprite
     destroy()
     {
         for (let list of this._spriteLists)
+        {
             removeFromArray(list._sprites, this);
+            list.length--;
+        }
         this._spriteLists = [];
+        this._destroyed = true;
     }
 
     getImageView()
@@ -135,12 +143,18 @@ class Sprite
     setImageView(imageView)
     {
         this._imageView = imageView;
-        this.setRectangularHitbox(
-            0,
-            imageView.width,
-            0,
-            imageView.height
-        );
+
+        if (imageView !== null)
+        {
+            this.setRectangularHitbox(
+                0,
+                imageView.width,
+                0,
+                imageView.height
+            );
+            this.rotationPivotX = imageView.width / 2;
+            this.rotationPivotY = imageView.height / 2;
+        }
     }
 
     // Set an axis aligned rectangular hitbox relative to the pivot
@@ -150,14 +164,31 @@ class Sprite
         this._hitbox = new Rect(
             left,
             bottom,
-            right - left,
-            top - bottom
+            Math.abs(right - left),
+            Math.abs(top - bottom)
         );
     }
 
     // Set a circular hitbox
-    setCircularHitbox(x, y, r)
+    setCircularHitbox(x=null, y=null, r=null)
     {
+        // If no arguments were passed, try to set a hitbox automatically
+        if (x === null)
+        {
+            if (!this._hasCircularHitbox)
+            {
+                // Approximate circle from rectangle
+                x = this._hitbox.w / 2 + this._hitbox.x;
+                y = this._hitbox.h / 2 + this._hitbox.y;
+                r = (this._hitbox.w + this._hitbox.h) / 4;
+            }
+            else
+            {
+                // Already has a circle hitbox
+                return;
+            }
+        }
+
         this._hasCircularHitbox = true;
         this._hitbox = new Circle(x, y, r);
     }
@@ -183,10 +214,10 @@ class Sprite
             let r2 = sprite._hitbox.clone();
             r2.x += spriteX;
             r2.y += spriteY;
-            return !(r2.left() >= r1.right()
-                || r2.right()  <= r1.left()
-                || r2.top()    >= r1.bottom()
-                || r2.bottom() <= r1.top());
+            return !(r2.left()   >= r1.right()
+                  || r2.right()  <= r1.left()
+                  || r2.bottom() >= r1.top()
+                  || r2.top()    <= r1.bottom());
         }
         else if (this._hasCircularHitbox && sprite._hasCircularHitbox)
         {
@@ -227,7 +258,7 @@ class Sprite
 
             // Find the nearest point in the rectangle to the circle
             let nearestX = clamp(circle.x, rect.left(), rect.right());
-            let nearestY = clamp(circle.y, rect.top(), rect.bottom());
+            let nearestY = clamp(circle.y, rect.bottom(), rect.top());
 
             // If this point is inside the circle, there is a collision
             let distSq = (circle.x - nearestX) ** 2 + (circle.y - nearestY) ** 2;
@@ -252,6 +283,20 @@ class Sprite
     }
 }
 
+// Data about a collision
+class Collision
+{
+    constructor(collider, collidee, x, y, relVelX, relVelY)
+    {
+        this.collider = collider;
+        this.collidee = collidee;
+        this.x = x;
+        this.y = y;
+        this.relVelX = relVelX;
+        this.relVelY = relVelY;
+    }
+}
+
 // Moving sprite that is affected by collisions
 class PhysicsSprite extends Sprite
 {
@@ -269,20 +314,19 @@ class PhysicsSprite extends Sprite
         this.useGravity = false;
 
         // Rotational properties
-        this.rotationPivotX = 0;
-        this.rotationPivotY = 0;
-        this.angle = 0;
         this.angularVel = 0;
         this.angularDamping = 1;
         
         // Collision properties
-        this._collidableSpriteLists = [levelTiles];
+        this._collidableSpriteLists = [];
         this.oncollision = null;
         this.collisionDampingX = 1;
         this.collisionDampingY = 1;
         this.angularCollisionDamping = 1;
 
         this._groundedState = 0;
+        this._lastCollisionX = null;
+        this._lastCollisionY = null;
     }
 
     // Applies velocity and gravity and checks for collision
@@ -297,6 +341,10 @@ class PhysicsSprite extends Sprite
 
         let collidingWithX = [];
         let collidingWithY = [];
+        let thisVelX = this.velX;
+        let thisVelY = this.velY;
+        this._lastCollisionX = null;
+        this._lastCollisionY = null;
 
         // Move in y axis
         let velYSign = signof(this.velY);
@@ -307,10 +355,7 @@ class PhysicsSprite extends Sprite
             if (collidingWithY.length > 0)
             {
                 // If collided and move back until not colliding
-                do
-                {
-                    this.y -= velYSign;
-                } while (this.isColliding());
+                this.ejectCollisionY();
                 
                 // If collided while moving down, the sprite is grounded
                 if (velYSign < 0)
@@ -330,10 +375,7 @@ class PhysicsSprite extends Sprite
             if (collidingWithX.length > 0)
             {
                 // If collided and move back until not colliding
-                do
-                {
-                    this.x -= velXSign;
-                } while (this.isColliding());
+                this.ejectCollisionX();
                 
                 // Bounce off
                 this.velX *= -this.bouncynessX;
@@ -367,7 +409,16 @@ class PhysicsSprite extends Sprite
 
             // Call oncollision event
             if (this.oncollision !== null)
-                this.oncollision(collidingWith);
+            {
+                this.oncollision(collidingWith.map(sprite => new Collision(
+                    this,
+                    sprite,
+                    this._lastCollisionX ?? this.x,
+                    this._lastCollisionY ?? this.y,
+                    thisVelX - sprite.velX,
+                    thisVelY - sprite.velY,
+                )));
+            }
         }
     }
 
@@ -375,14 +426,7 @@ class PhysicsSprite extends Sprite
     {
         this._collidableSpriteLists.push(...spriteLists);
     }
-
-    setImageView(imageView)
-    {
-        super.setImageView(imageView);
-        this.rotationPivotX = imageView.width / 2;
-        this.rotationPivotY = imageView.height / 2;
-    }
-
+    
     isGrounded()
     {
         return this.useGravity && this._groundedState > 0;
@@ -402,5 +446,93 @@ class PhysicsSprite extends Sprite
         for (let list of this._collidableSpriteLists)
             hits.push(...this.getCollisionWithSprites(list));
         return hits;
+    }
+
+    // Move out of collision in the x-axis
+    ejectCollisionX()
+    {
+        this._ejectCollision(true);
+    }
+
+    // Move out of collision in the y-axis
+    ejectCollisionY()
+    {
+        this._ejectCollision(false);
+    }
+
+    // Move out of collision in the y-axis then the x-axis
+    ejectCollision()
+    {
+        this.ejectCollisionY();
+        this.ejectCollisionX();
+    }
+
+    // Move out of collision in an axis
+    _ejectCollision(isHorizontal)
+    {
+        // Get property names
+        let axis = isHorizontal ? "x" : "y";
+        let otherAxis = isHorizontal ? "y" : "x";
+        let vel = isHorizontal ? "velX" : "velY";
+        let negSide = isHorizontal ? "left" : "bottom";
+        let posSide = isHorizontal ? "right" : "top";
+
+        if (this[vel] === 0)
+            return;
+
+        let moveNeg = this[vel] > 0;
+        let walls = this.getCollidingWith();
+        while (walls.length > 0)
+        {
+            let k = null;
+
+            for (let wall of walls)
+            {
+                let newK;
+                if (wall._hasCircularHitbox)
+                {
+                    let n = this[otherAxis] - wall[otherAxis] - wall._hitbox[otherAxis];
+                    newK = Math.sqrt(wall._hitbox.r ** 2, n ** 2);
+                    if (moveNeg)
+                        newK *= -1;
+                }
+                else
+                {
+                    if (moveNeg)
+                        newK = wall._hitbox[negSide]();
+                    else
+                        newK = wall._hitbox[posSide]();
+                }
+                newK += wall[axis];
+                
+                if (k === null || moveNeg === (newK < k))
+                    k = newK;
+            }
+
+            if (isHorizontal)
+                this._lastCollisionX = k;
+            else
+                this._lastCollisionY = k;
+
+            // Account for this hitbox
+            if (this._hasCircularHitbox)
+            {
+                if (moveNeg)
+                    k -= this._hitbox[axis] + this._hitbox.r;
+                else
+                    k -= this._hitbox[axis] - this._hitbox.r;
+            }
+            else
+            {
+                if (moveNeg)
+                    k -= this._hitbox[posSide]();
+                else
+                    k -= this._hitbox[negSide]();
+            }
+
+            this[axis] = k;
+
+            walls = this.getCollidingWith();
+        }
     }
 }

@@ -2,25 +2,33 @@
 // Files
 const CHARACTER_ATLAS_FILENAME = "characters.png";
 const TILE_ATLAS_FILENAME = "tiles.png";
+const OBJECT_ATLAS_FILENAME = "objects.png";
 
 // Layout
 const BACKGROUND_COLOUR = [0x87, 0xCE, 0xFF];
 const PIXEL_SIZE = 2;
 const TILE_SIZE = 16;
 
-// Bullet properties (when applicable)
+// Bullet properties (where applicable)
 const BULLET_ANGULAR_VELOCITY = -0.3;
 const BULLET_ANGULAR_DAMPING = 0.98;
 const BULLET_COLLISION_DAMPING = 0.95;
 const BULLET_ROTATION_COLLISION_DAMPING = 0.95;
-const EXPLOSION_DAMAGE = 10;
+const BULLET_SPAWN_OFFSET_Y = 6;
+const BULLET_SPAWN_DISTANCE_THRESHOLD = 32;
+const EXPLOSION_DAMAGE = 100;
 
-// Player physics
+// Character properties
 const PLAYER_DAMPING_X = 0.9;
 const PLAYER_WALK_SPEED = 0.5;
 const ENEMY_DAMPING_X = 0.8;
 const ENEMY_WALK_SPEED = 0.4;
 const JUMP_VELOCITY = 8;
+const PLAYER_HP = 25;
+const ENEMY_HP = 3;
+const DIE_VELOCITY_X = 3;
+const DIE_VELOCITY_Y = 3;
+const DIE_DAMPING_X = 0.98;
 
 // Enemy AI
 const ENEMY_WALK_INTERVAL_MIN = 0.5;
@@ -32,6 +40,11 @@ const ENEMY_SHOOT_INTERVAL_MAX = 3;
 const ENEMY_SHOOT_DURATION_MIN = 0.3;
 const ENEMY_SHOOT_DURATION_MAX = 0.7;
 const ENEMY_RAYCAST_ANGLE = Math.PI / 3;
+
+// Particles
+const BURST_PARTICLE_ANGULAR_VEL_MAX = 0.5;
+const BLOOD_PARTICLE_MIN_SIZE = 1;
+const BLOOD_PARTICLE_MAX_SIZE_EXCL = 5;
 
 // Other settings
 const GRAVITY_STRENGTH = -0.4;
@@ -58,7 +71,9 @@ class Key
 class CharacterAtlasIndex
 {
     static PLAYER_1 = 0;
-    static ENEMY_1_1 = 9;
+    static ENEMY1_1 = 9;
+    static ENEMY2_1 = 12;
+    static ENEMY3_1 = 15;
 }
 
 class TileAtlasIndex
@@ -66,10 +81,15 @@ class TileAtlasIndex
     static WALL = 0;
     static SURFACE = 1;
     static BOMB = 2;
-    static DEFAULT_BULLET = 3;
-    static SNIPER_BULLET = 3;
-    static FAST_BULLET = 4;
-    static GRENADE_BULLET = 5;
+}
+
+class ObjectAtlasIndex
+{
+    static DEFAULT_BULLET = 0;
+    static SNIPER_BULLET = 1;
+    static FAST_BULLET = 1;
+    static GRENADE_BULLET = 2;
+    static BLOOD_PARTICLE = 3;
 }
 
 // Bullet properties
@@ -83,15 +103,15 @@ const DEFAULT_BULLET = {
     spread: 4,
     usePhysics: false,
     bouncyness: 0,
-    atlasIndex: TileAtlasIndex.DEFAULT_BULLET,
+    atlasIndex: ObjectAtlasIndex.DEFAULT_BULLET,
     useCircularHitbox: false,
-    hitbox: [
+    atlasRect: new Rect(
         0,
-        TILE_SIZE,
-        TILE_SIZE / 2 - 1,
-        TILE_SIZE / 2 + 1
-    ],
-    oncollision: bullet => bullet.destroy(),
+        7,
+        16,
+        2
+    ),
+    oncollision: collision => collision.collider.destroy(),
 };
 
 const FAST_BULLET = {
@@ -103,35 +123,35 @@ const FAST_BULLET = {
     spread: 8,
     usePhysics: false,
     bouncyness: null,
-    atlasIndex: TileAtlasIndex.FAST_BULLET,
+    atlasIndex: ObjectAtlasIndex.FAST_BULLET,
     useCircularHitbox: false,
-    hitbox: [
+    atlasRect: new Rect(
         0,
-        TILE_SIZE / 2,
-        TILE_SIZE / 2 - 1,
-        TILE_SIZE / 2 + 1
-    ],
-    oncollision: bullet => bullet.destroy(),
+        7,
+        8,
+        2
+    ),
+    oncollision: collision => collision.collider.destroy(),
 };
 
 const SNIPER_BULLET = {
     cooldown: 8 / 10,
-    damage: 240 / 10, // 30 DPS
+    damage: 999, // One shot kill
     velX: 24,
     velY: 0,
     range: 32 * TILE_SIZE,
     spread: 1,
     usePhysics: false,
     bouncyness: null,
-    atlasIndex: TileAtlasIndex.SNIPER_BULLET,
+    atlasIndex: ObjectAtlasIndex.SNIPER_BULLET,
     useCircularHitbox: false,
-    hitbox: [
+    atlasRect: new Rect(
         0,
-        TILE_SIZE / 2,
-        TILE_SIZE / 2 - 1,
-        TILE_SIZE / 2
-    ],
-    oncollision: bullet => bullet.destroy(),
+        7,
+        16,
+        2
+    ),
+    oncollision: collision => collision.collider.destroy(),
 };
 
 const GRENADE_BULLET = {
@@ -143,13 +163,14 @@ const GRENADE_BULLET = {
     spread: 1,
     usePhysics: true,
     bouncyness: 0.7,
-    atlasIndex: TileAtlasIndex.GRENADE_BULLET,
-    useCircularHitbox: true,
-    hitbox: [
+    atlasIndex: ObjectAtlasIndex.GRENADE_BULLET,
+    useCircularHitbox: false,
+    atlasRect: new Rect(
+        0,
+        0,
         8,
-        8,
-        3
-    ],
+        10
+    ),
     oncollision: () => {},
 };
 

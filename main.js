@@ -3,12 +3,14 @@
 let input = new Input();
 let canvas = null;
 let gfx = null;
+let time = 0;
 
 // Global sprite groups
 let levelTiles = new SpriteList();
 let players = new SpriteList();
 let enemies = new SpriteList();
 let bullets = new SpriteList();
+let entities = new SpriteList();
 
 
 function loadLevel(levelData)
@@ -16,8 +18,7 @@ function loadLevel(levelData)
     let level = new Level(levelData);
 
     // Create player
-    let player = new Character(
-        CharacterAtlasIndex.PLAYER_1,
+    let player = new Player(
         TILE_SIZE * level.getStartPos()[0],
         TILE_SIZE * level.getStartPos()[1]
     );
@@ -41,11 +42,16 @@ function drawLevel()
 
     for (let bullet of bullets)
         gfx.drawSprite(bullet);
+
+    for (let particle of Particle.getSprites())
+        gfx.drawSprite(particle);
 }
 
 // Update function
 function onUpdate()
 {
+    time += FRAME_DURATION;
+
     // Control player
     if (input.getKey(Key.LEFT))
         players.get(0).moveLeft();
@@ -63,7 +69,7 @@ function onUpdate()
     {
         let incr = input.getKeyDown(Key.SWITCH_WEAPON_R) ? 1 : -1;
         players.get(0).bulletType = PRIMARY_BULLET_TYPES[wrappedIncrement(
-            PRIMARY_BULLET_TYPES.indexOf(player.bulletType),
+            PRIMARY_BULLET_TYPES.indexOf(players.get(0).bulletType),
             incr,
             0,
             PRIMARY_BULLET_TYPES.length
@@ -74,13 +80,15 @@ function onUpdate()
     gfx.update();
     drawLevel();
 
-    // Updates players, enemies, and bullets
+    // Update sprites
     for (let player of players)
         player.update();
-    for (let enemy of enemies)
-        enemy.update();
     for (let bullet of bullets)
         bullet.update();
+    for (let enemy of enemies)
+        enemy.update();
+        
+    Particle.update();
 
     // Update input
     input.update();

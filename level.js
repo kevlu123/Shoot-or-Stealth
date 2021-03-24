@@ -25,12 +25,20 @@ class Level
             for (let x = 0; x < this._width; x++)
             {
                 let tileIndex = null;
+                let enemyClass = null;
+
                 let c = lines[y][x];
                 switch (c)
                 {
+                    // Create level tiles
                     case '.': tileIndex = TileAtlasIndex.WALL; break;
                     case '_': tileIndex = TileAtlasIndex.SURFACE; break;
                     case 'x': tileIndex = TileAtlasIndex.BOMB; break;
+                    
+                    // Spawn enemies
+                    case '1': enemyClass = Enemy1; break;
+                    case '2': enemyClass = Enemy2; break;
+                    case '3': enemyClass = Enemy3; break;
 
                     case 's':
                         // Set start position
@@ -41,50 +49,25 @@ class Level
                         this._endPos = [x, y];
                         break;
 
-                    case '1':
-                        {
-                            // Enemy 1
-                            let enemy = new Enemy(
-                                CharacterAtlasIndex.ENEMY_1_1,
-                                TILE_SIZE * x,
-                                TILE_SIZE * y,
-                                DEFAULT_BULLET
-                            );
-                            enemies.push(enemy);
-                            break;
-                        }
-                    case '2':
-                        {
-                            // Enemy 2
-                            let enemy = new Enemy(
-                                CharacterAtlasIndex.ENEMY_1_1,
-                                TILE_SIZE * x,
-                                TILE_SIZE * y,
-                                FAST_BULLET
-                            );
-                            enemies.push(enemy);
-                            break;
-                        }
-                    case '3':
-                        {
-                            // Enemy 3
-                            let enemy = new Enemy(
-                                CharacterAtlasIndex.ENEMY_1_1,
-                                TILE_SIZE * x,
-                                TILE_SIZE * y,
-                                SNIPER_BULLET
-                            );
-                            enemies.push(enemy);
-                            break;
-                        }
                 }
 
                 if (tileIndex !== null)
                 {
+                    // Instantiate tile
                     let tile = Sprite.fromImageView(ImageView.fromAtlas(TILE_ATLAS_FILENAME, tileIndex));
                     tile.x = TILE_SIZE * x;
                     tile.y = TILE_SIZE * y;
                     levelTiles.push(tile);
+                }
+                else if (enemyClass !== null)
+                {
+                    // Instantiate enemy
+                    let enemy = new enemyClass(
+                        TILE_SIZE * x,
+                        TILE_SIZE * y
+                    );
+                    enemy.flippedX = randBool();
+                    enemies.push(enemy);
                 }
             }
     }

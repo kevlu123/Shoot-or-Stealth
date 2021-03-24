@@ -1,15 +1,18 @@
 
-// Sprite class for player and enemies
+// Base sprite class for player and enemies
 class Character extends PhysicsSprite
 {
-    constructor(characterAtlasIndex, x, y, bulletType=DEFAULT_BULLET, isPlayer=true)
+    constructor(characterAtlasIndex, x, y, bulletType, isPlayer, hp)
     {
         super();
 
         this._timesSinceShot = new Map(); // Keep track of each bullet type
-        this._bulletType = bulletType;
         this._isPlayer = isPlayer;
+        this._hp = hp;
+        this._dead = false;
+
         this.walkSpeed = PLAYER_WALK_SPEED;
+        this.bulletType = bulletType;
 
         this.x = x;
         this.y = y;
@@ -22,6 +25,9 @@ class Character extends PhysicsSprite
             0,
             TILE_SIZE
         );
+
+        this.addCollidableSpriteList(levelTiles);
+        this.addCollidableSpriteList(entities);
     }
 
     update()
@@ -34,92 +40,99 @@ class Character extends PhysicsSprite
             this._timesSinceShot.set(key, val + FRAME_DURATION);
     }
 
+    isDead()
+    {
+        return this._dead;
+    }
+
+    damage(amount)
+    {
+        if (this._dead)
+            return;
+
+        this._hp -= amount;
+        if (this._hp <= 0)
+            this._die();
+    }
+
     moveLeft()
     {
+        if (this._dead)
+            return;
+
         this.velX -= this.walkSpeed;
         this.flippedX = true;
     }
 
     moveRight()
     {
+        if (this._dead)
+            return;
+
         this.velX += this.walkSpeed;
         this.flippedX = false;
     }
 
     jump()
     {
+        if (this._dead)
+            return;
+
         this.velY = JUMP_VELOCITY;
     }
 
     // Creates a bullet if cooldown has passed
-    shoot(bulletType=this._bulletType)
+    shoot(bulletType=this.bulletType)
     {
+        if (this._dead)
+            return;
+
         if (this._timesSinceShot.has(bulletType) && this._timesSinceShot.get(bulletType) <= bulletType.cooldown)
             return;
         this._timesSinceShot.set(bulletType, 0);
         
         // Get spawn position
         let spawnX = this.x;
-        let spawnY = this.y + 2 + randInt(0, bulletType.spread) - bulletType.spread / 2;
+        let spawnY = this.y + BULLET_SPAWN_OFFSET_Y + randInt(0, bulletType.spread) - bulletType.spread / 2;
         if (this.flippedX)
             spawnX -= TILE_SIZE;
         else
             spawnX += TILE_SIZE;
-            
-        // Get initial velocity
-        let velX;
-        let velY = bulletType.velY;
-        if (this.flippedX)
-            velX = -bulletType.velX;
-        else
-            velX = bulletType.velX;
     
         // Create bullet
         let bullet = new Bullet(
-            this._isPlayer,
-            bulletType.atlasIndex,
             spawnX,
             spawnY,
-            velX,
-            velY,
-            bulletType.damage,
-            bulletType.range
+            this._isPlayer,
+            bulletType,
+            this.flippedX
         );
-        bullet.flippedX = this.flippedX;
 
-        // Set oncollision callback
-        bullet.oncollision = () => bulletType.oncollision(bullet);
-
-        // Set hitbox
-        if (bulletType.useCircularHitbox)
-            bullet.setCircularHitbox(...bulletType.hitbox);
-        else
-            bullet.setRectangularHitbox(...bulletType.hitbox);
-    
-        // Set physics properties
         if (bulletType.usePhysics)
-        {
-            bullet.flippedX = false;
-            bullet.useGravity = true;
-            bullet.bouncynessX = bulletType.bouncyness;
-            bullet.bouncynessY = bulletType.bouncyness;
-            bullet.collisionDampingX = BULLET_COLLISION_DAMPING;
-
-            bullet.rotationPivotX = bulletType.hitbox[0];
-            bullet.rotationPivotY = bulletType.hitbox[1];
-            bullet.angularVel = signof(bullet.velX) * BULLET_ANGULAR_VELOCITY;
-            bullet.angularDamping = BULLET_ANGULAR_DAMPING;
-        }
-
+            this.addCollidableSpriteList(entities);
         bullets.push(bullet);
+    }
+
+    _die()
+    {
+        if (this._dead)
+            return;
+
+        this._dead = true;
+        this.angle = Math.PI / 2;
+        this.dampingX = DIE_DAMPING_X;
+
+        this.rotationPivotY--;
+        this._hitbox.y++;
     }
 }
 
+// Base sprite class for enemies
 class Enemy extends Character
 {
-    constructor(characterAtlasIndex, x, y, bulletType=DEFAULT_BULLET)
+    constructor(characterAtlasIndex, x, y, bulletType)
     {
-        super(characterAtlasIndex, x, y, bulletType, false);
+        super(characterAtlasIndex, x, y, bulletType, false, ENEMY_HP);
 
         this.dampingX = ENEMY_DAMPING_X;
         this.walkSpeed = ENEMY_WALK_SPEED;
@@ -131,12 +144,10 @@ class Enemy extends Character
         // If enemy has seen the player, walk and shoot
         if (this._triggered)
         {
-            let curTime = now();
-        
-            if (curTime >= this._walkTime)
+            if (time >= this._walkTime)
             {
                 // Stop walking and set data for next walk
-                if (curTime >= this._walkTime + this._walkDuration)
+                if (time >= this._walkTime + this._walkDuration)
                     this._prepareWalk();
                 
                 else if (this.isGrounded())
@@ -165,10 +176,10 @@ class Enemy extends Character
             }
 
             // Shoot
-            if (curTime >= this._shootTime)
+            if (time >= this._shootTime)
             {
                 // Stop shooting and set data for next shoot
-                if (curTime >= this._shootTime + this._shootDuration)
+                if (time >= this._shootTime + this._shootDuration)
                     this._prepareShoot();
                 else
                     this.shoot();
@@ -182,7 +193,7 @@ class Enemy extends Character
                 this.y + TILE_SIZE / 2,
                 this.flippedX ? Math.PI : 0,
                 [levelTiles, players],
-                this._bulletType.range
+                this.bulletType.range
             );
 
             if (hits.some(hit => players.includes(hit)))
@@ -201,13 +212,45 @@ class Enemy extends Character
     _prepareWalk()
     {
         this._walkLeft = randBool();
-        this._walkTime = now() + randFloat(ENEMY_WALK_INTERVAL_MIN, ENEMY_WALK_INTERVAL_MAX);
+        this._walkTime = time + randFloat(ENEMY_WALK_INTERVAL_MIN, ENEMY_WALK_INTERVAL_MAX);
         this._walkDuration = randFloat(ENEMY_WALK_DURATION_MIN, ENEMY_WALK_DURATION_MAX);
     }
 
     _prepareShoot()
     {
-        this._shootTime = now() + randFloat(ENEMY_SHOOT_INTERVAL_MIN, ENEMY_SHOOT_INTERVAL_MAX);
+        this._shootTime = time + randFloat(ENEMY_SHOOT_INTERVAL_MIN, ENEMY_SHOOT_INTERVAL_MAX);
         this._shootDuration = randFloat(ENEMY_SHOOT_DURATION_MIN, ENEMY_SHOOT_DURATION_MAX);
+    }
+}
+
+class Enemy1 extends Enemy
+{
+    constructor(x, y)
+    {
+        super(CharacterAtlasIndex.ENEMY1_1, x, y, DEFAULT_BULLET);
+    }
+}
+
+class Enemy2 extends Enemy
+{
+    constructor(x, y)
+    {
+        super(CharacterAtlasIndex.ENEMY2_1, x, y, FAST_BULLET);
+    }
+}
+
+class Enemy3 extends Enemy
+{
+    constructor(x, y)
+    {
+        super(CharacterAtlasIndex.ENEMY3_1, x, y, SNIPER_BULLET);
+    }
+}
+
+class Player extends Character
+{
+    constructor(x, y)
+    {
+        super(CharacterAtlasIndex.PLAYER_1, x, y, DEFAULT_BULLET, true, PLAYER_HP);
     }
 }

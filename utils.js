@@ -36,7 +36,7 @@ class Rect
 
     top()
     {
-        return this.y;
+        return this.y + this.h;
     }
 
     right()
@@ -46,7 +46,7 @@ class Rect
 
     bottom()
     {
-        return this.y + this.h;
+        return this.y;
     }
 
     // Create a copy of this object
@@ -89,6 +89,18 @@ function lerp(a, b, interpolation)
     return (b - a) * interpolation + a;
 }
 
+// Gets the squared distance between two points
+function distanceSqr(x1, y1, x2, y2)
+{
+    return (x1 - x2) ** 2 + (y1 - y2) ** 2;
+}
+
+// Gets the distance between two points
+function distance(x1, y1, x2, y2)
+{
+    return Math.sqrt(distanceSqr(x1, y1, x2, y2));
+}
+
 // Removes an item from an array
 function removeFromArray(array, value)
 {
@@ -115,12 +127,6 @@ function randBool()
 function wrappedIncrement(val, incr, min, maxExcl)
 {
     return (val + incr) % (maxExcl - min) + min;
-}
-
-// Get the current time in seconds since epoch
-function now()
-{
-    return Date.now() / 1000;
 }
 
 // Casts a ray and gets a list of sprites that the ray hits

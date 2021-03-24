@@ -68,18 +68,18 @@ class Graphics
             dstX *= -1;
             dstW *= -1;
         }
-
+        
         // Draw image
         this._ctx.drawImage(
-            sprite.getImageView().getImage(),
-            sprite.getImageView().x,
-            sprite.getImageView().y,
-            sprite.getImageView().width,
-            sprite.getImageView().height,
+            imageView.getImage(),
+            imageView.x,
+            imageView.getImage().height - imageView.y - imageView.height,
+            imageView.width,
+            imageView.height,
             dstX,
             dstY,
             dstW,
-            sprite.getImageView().height * PIXEL_SIZE,
+            imageView.height * PIXEL_SIZE,
         );
 
         // Revert canvas transformations
