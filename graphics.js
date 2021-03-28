@@ -11,6 +11,8 @@ class Graphics
         this.x = 0;
         this.y = 0;
         this.target = null;
+
+        this._shakeWaveform = [];
     }
 
     update()
@@ -20,10 +22,12 @@ class Graphics
 
         this.x = lerp(this.x, targetX, CAMERA_LERP);
         this.y = lerp(this.y, targetY, CAMERA_LERP);
+        
+        this._shakeWaveform.shift();
     }
 
     // Fills the entire canvas with a colour.
-    // Parameter colour is an an rgb array with values 0-255
+    // Parameter colour is an rgb array with values 0-255
     drawBackground(colour)
     {
         this._ctx.fillStyle = Graphics._rgb(colour);
@@ -37,8 +41,20 @@ class Graphics
         this._ctx.imageSmoothingEnabled = false;
 
         let imageView = sprite.getImageView();
-        let dstX =  PIXEL_SIZE * (Math.floor(sprite.x) - this.x) + this.width() / 2;
-        let dstY = -PIXEL_SIZE * (Math.floor(sprite.y) - this.y + imageView.height) + this.height() / 2;
+        if (imageView === null)
+            return;
+
+        // Get shake offset
+        let shakeX = 0;
+        let shakeY = 0;
+        if (this._shakeWaveform.length > 0)
+        {
+            shakeX = this._shakeWaveform[0][0];
+            shakeY = this._shakeWaveform[0][1];
+        }
+
+        let dstX =  PIXEL_SIZE * (Math.floor(sprite.x) - this.x - shakeX) + this.width() / 2;
+        let dstY = -PIXEL_SIZE * (Math.floor(sprite.y) - this.y - shakeY + imageView.height) + this.height() / 2;
         let dstW =  PIXEL_SIZE * imageView.width;
         let ctxSaved = false;
 
@@ -97,6 +113,18 @@ class Graphics
     height()
     {
         return this._canvas.height;
+    }
+
+    // Shakes the screen
+    shake(frequency=8, amplitude=3, duration=0.2)
+    {
+        this._shakeWaveform = [];
+        for (let t = 0; t <= duration + FRAME_DURATION; t += FRAME_DURATION)
+        {
+            let sampleX = amplitude * Math.sin(2 * Math.PI * frequency * t);
+            let sampleY = amplitude * Math.sin(2 * Math.PI * frequency * t * 0.7);
+            this._shakeWaveform.push([sampleX, sampleY]);
+        }
     }
 
     // Converts an rgb array with values 0-255 to a string representing a colour

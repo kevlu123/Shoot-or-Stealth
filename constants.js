@@ -16,7 +16,14 @@ const BULLET_COLLISION_DAMPING = 0.95;
 const BULLET_ROTATION_COLLISION_DAMPING = 0.95;
 const BULLET_SPAWN_OFFSET_Y = 6;
 const BULLET_SPAWN_DISTANCE_THRESHOLD = 32;
+
+// Explosions
 const EXPLOSION_DAMAGE = 100;
+const EXPLOSION_FORCE = 5;
+const EXPLOSION_RADIUS = 100;
+const SCREEN_SHAKE_FREQUENCY = 10;
+const SCREEN_SHAKE_AMPLITUDE = 3;
+const SCREEN_SHAKE_DURATION = 0.15;
 
 // Character properties
 const PLAYER_DAMPING_X = 0.9;
@@ -28,7 +35,8 @@ const PLAYER_HP = 25;
 const ENEMY_HP = 3;
 const DIE_VELOCITY_X = 3;
 const DIE_VELOCITY_Y = 3;
-const DIE_DAMPING_X = 0.98;
+const DIE_DAMPING_X = 0.96;
+const TERMINAL_VELOCITY = 16;
 
 // Enemy AI
 const ENEMY_WALK_INTERVAL_MIN = 0.5;
@@ -42,9 +50,17 @@ const ENEMY_SHOOT_DURATION_MAX = 0.7;
 const ENEMY_RAYCAST_ANGLE = Math.PI / 3;
 
 // Particles
-const BURST_PARTICLE_ANGULAR_VEL_MAX = 0.5;
+const BLOOD_PARTICLE_COUNT = 5;
+const BLOOD_PARTICLE_MAX_VEL = 3;
 const BLOOD_PARTICLE_MIN_SIZE = 1;
 const BLOOD_PARTICLE_MAX_SIZE_EXCL = 5;
+const BLOOD_PARTICLE_LIFETIME = 2;
+
+const EXPLOSION_PARTICLE_COUNT = 60;
+const EXPLOSION_PARTICLE_MAX_VEL = 10;
+const EXPLOSION_PARTICLE_LIFETIME = 2;
+const EXPLOSION_PARTICLE_SIZE = 5;
+
 
 // Other settings
 const GRAVITY_STRENGTH = -0.4;
@@ -80,7 +96,6 @@ class TileAtlasIndex
 {
     static WALL = 0;
     static SURFACE = 1;
-    static BOMB = 2;
 }
 
 class ObjectAtlasIndex
@@ -89,7 +104,11 @@ class ObjectAtlasIndex
     static SNIPER_BULLET = 1;
     static FAST_BULLET = 1;
     static GRENADE_BULLET = 2;
-    static BLOOD_PARTICLE = 3;
+    static BOMB = 3;
+    static BLOOD_PARTICLE = 4;
+    static EXPLOSION_PARTICLE_1 = 5;
+    static EXPLOSION_PARTICLE_2 = 6;
+    static EXPLOSION_PARTICLE_3 = 7;
 }
 
 // Bullet properties
@@ -103,6 +122,7 @@ const DEFAULT_BULLET = {
     spread: 4,
     usePhysics: false,
     bouncyness: 0,
+    lifetime: null,
     atlasIndex: ObjectAtlasIndex.DEFAULT_BULLET,
     useCircularHitbox: false,
     atlasRect: new Rect(
@@ -110,8 +130,7 @@ const DEFAULT_BULLET = {
         7,
         16,
         2
-    ),
-    oncollision: collision => collision.collider.destroy(),
+    )
 };
 
 const FAST_BULLET = {
@@ -123,6 +142,7 @@ const FAST_BULLET = {
     spread: 8,
     usePhysics: false,
     bouncyness: null,
+    lifetime: null,
     atlasIndex: ObjectAtlasIndex.FAST_BULLET,
     useCircularHitbox: false,
     atlasRect: new Rect(
@@ -130,8 +150,7 @@ const FAST_BULLET = {
         7,
         8,
         2
-    ),
-    oncollision: collision => collision.collider.destroy(),
+    )
 };
 
 const SNIPER_BULLET = {
@@ -143,6 +162,7 @@ const SNIPER_BULLET = {
     spread: 1,
     usePhysics: false,
     bouncyness: null,
+    lifetime: null,
     atlasIndex: ObjectAtlasIndex.SNIPER_BULLET,
     useCircularHitbox: false,
     atlasRect: new Rect(
@@ -150,8 +170,7 @@ const SNIPER_BULLET = {
         7,
         16,
         2
-    ),
-    oncollision: collision => collision.collider.destroy(),
+    )
 };
 
 const GRENADE_BULLET = {
@@ -163,6 +182,7 @@ const GRENADE_BULLET = {
     spread: 1,
     usePhysics: true,
     bouncyness: 0.7,
+    lifetime: 2.5,
     atlasIndex: ObjectAtlasIndex.GRENADE_BULLET,
     useCircularHitbox: false,
     atlasRect: new Rect(
@@ -170,8 +190,7 @@ const GRENADE_BULLET = {
         0,
         8,
         10
-    ),
-    oncollision: () => {},
+    )
 };
 
 const PRIMARY_BULLET_TYPES = [

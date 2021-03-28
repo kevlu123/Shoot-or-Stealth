@@ -13,10 +13,12 @@ class Bullet extends PhysicsSprite
             this.velX *= -1;
         this.velY = bulletType.velY;
         this.flippedX = facingLeft && !bulletType.usePhysics;
+        this._bulletType = bulletType;
         this._startX = x;
         this._startY = y;
         this._damage = bulletType.damage;
         this._range = bulletType.range;
+        this._destroyTime = time + (bulletType.lifetime ?? 9999);
         this.setImageView(ImageView.fromAtlas(
             OBJECT_ATLAS_FILENAME,
             bulletType.atlasIndex,
@@ -28,36 +30,37 @@ class Bullet extends PhysicsSprite
 
         // Set oncollision callback
         let self = this;
-        this.oncollision = function(collisions)
+        this.onCollision = function(collisions)
         {
             for (let collision of collisions)
             {
                 let sprite = collision.collidee;
                 if ("damage" in sprite)
                 {
+                    // If sprite is character, damage the character
                     sprite.damage(bulletType.damage);
+
+                    // If character is dead, bounce the body
                     if (sprite.isDead())
                     {
                         sprite.velX = DIE_VELOCITY_X * signof(collision.relVelX);
                         sprite.velY = DIE_VELOCITY_Y;
                     }
                     
-                    let imageView = ImageView.fromAtlas(
-                        TILE_ATLAS_FILENAME,
-                        TileAtlasIndex.GRENADE_BULLET, //... placeholder
-                        0,
-                        0,
-                        GRENADE_BULLET.atlasRect.w,
-                        GRENADE_BULLET.atlasRect.h
-                    );
-
+                    // Create blood particles
                     BloodBurstParticle.create(
                         collision.x,
                         collision.y
                     );
                 }
                 
-                bulletType.oncollision(collision);
+                // Call onShot event
+                if ("onShot" in sprite)
+                    sprite.onShot(bulletType);
+                
+                // If the bullet does not follow physics, destroy it upon collision
+                if (!bulletType.usePhysics)
+                    self.destroy();
             }
         }
 
@@ -70,7 +73,21 @@ class Bullet extends PhysicsSprite
         );
         if (bulletType.useCircularHitbox)
             this.setCircularHitbox();
+        
+
+        // Set collision
+        this.addCollidableSpriteList(entities);
+        this.addCollidableSpriteList(levelTiles);
+        if (isPlayerBullet)
+            this.addCollidableSpriteList(enemies);
+        else
+            this.addCollidableSpriteList(players);
+
+        // If spawned in wall, try to move out
+        while (this.isColliding())
+            this.x -= signof(this.velX);
     
+            
         // Set physics properties
         if (bulletType.usePhysics)
         {
@@ -91,16 +108,6 @@ class Bullet extends PhysicsSprite
                 return;
             }
         }
-
-        // If spawned in wall, try to move out
-        while (this.isColliding())
-            this.x -= signof(this.velX);
-
-        this.addCollidableSpriteList(levelTiles);
-        if (isPlayerBullet)
-            this.addCollidableSpriteList(enemies);
-        else
-            this.addCollidableSpriteList(players);
     }
 
     update()
@@ -112,7 +119,18 @@ class Bullet extends PhysicsSprite
             // Destroy bullet when it has travelled too far
             let distSq = distanceSqr(this._startX, this._startY, this.x, this.y);
             if (distSq > this._range ** 2)
+            {
                 this.destroy();
+                return;
+            }
+        }
+
+        if (time >= this._destroyTime)
+        {
+            // Destroy bullet if lifetime has passed. Explode if it is a grenade
+            if (this._bulletType === GRENADE_BULLET)
+                createExplosion(this.x, this.y);
+            this.destroy();
         }
     }
 }

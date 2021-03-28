@@ -15,6 +15,7 @@ let entities = new SpriteList();
 
 function loadLevel(levelData)
 {
+    // Load level data
     let level = new Level(levelData);
 
     // Create player
@@ -22,9 +23,10 @@ function loadLevel(levelData)
         TILE_SIZE * level.getStartPos()[0],
         TILE_SIZE * level.getStartPos()[1]
     );
-    gfx.target = player;
-
     players.push(player);
+    
+    // Make camera follow player
+    gfx.target = player;
 }
 
 function drawLevel()
@@ -39,6 +41,9 @@ function drawLevel()
 
     for (let player of players)
         gfx.drawSprite(player);
+
+    for (let entity of entities)
+        gfx.drawSprite(entity);
 
     for (let bullet of bullets)
         gfx.drawSprite(bullet);
@@ -87,11 +92,39 @@ function onUpdate()
         bullet.update();
     for (let enemy of enemies)
         enemy.update();
+    for (let entity of entities)
+        entity.update();
         
     Particle.update();
 
     // Update input
     input.update();
+}
+
+function createExplosion(x, y)
+{
+    ExplosionBurstParticle.create(x, y);
+    gfx.shake(
+        SCREEN_SHAKE_FREQUENCY,
+        SCREEN_SHAKE_AMPLITUDE,
+        SCREEN_SHAKE_DURATION
+    );
+
+    function checkExplosion(sprite)
+    {
+        if (sprite.isNearExplosion(x, y))
+            sprite.onExplosion(x, y);
+    };
+
+    // Blow up tiles
+    levelTiles.forEach(checkExplosion);
+
+    // Hurt enemies and players
+    enemies.forEach(checkExplosion);
+    players.forEach(checkExplosion);
+
+    // Check entities
+    entities.forEach(checkExplosion);
 }
 
 // Resize canvas when window resizes

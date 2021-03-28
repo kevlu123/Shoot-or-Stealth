@@ -10,10 +10,8 @@ class Character extends PhysicsSprite
         this._isPlayer = isPlayer;
         this._hp = hp;
         this._dead = false;
-
         this.walkSpeed = PLAYER_WALK_SPEED;
         this.bulletType = bulletType;
-
         this.x = x;
         this.y = y;
         this.useGravity = true;
@@ -25,7 +23,6 @@ class Character extends PhysicsSprite
             0,
             TILE_SIZE
         );
-
         this.addCollidableSpriteList(levelTiles);
         this.addCollidableSpriteList(entities);
     }
@@ -87,6 +84,7 @@ class Character extends PhysicsSprite
         if (this._dead)
             return;
 
+        // Check if cooldown for the bulletType is ready
         if (this._timesSinceShot.has(bulletType) && this._timesSinceShot.get(bulletType) <= bulletType.cooldown)
             return;
         this._timesSinceShot.set(bulletType, 0);
@@ -108,9 +106,14 @@ class Character extends PhysicsSprite
             this.flippedX
         );
 
-        if (bulletType.usePhysics)
-            this.addCollidableSpriteList(entities);
+        bullet.addCollidableSpriteList(entities);
         bullets.push(bullet);
+    }
+
+    onExplosion(x, y)
+    {
+        super.onExplosion(x, y);
+        this.damage(EXPLOSION_DAMAGE);
     }
 
     _die()
@@ -136,6 +139,7 @@ class Enemy extends Character
 
         this.dampingX = ENEMY_DAMPING_X;
         this.walkSpeed = ENEMY_WALK_SPEED;
+        this.flippedX = randBool();
         this._triggered = false;
     }
 
@@ -195,14 +199,11 @@ class Enemy extends Character
                 [levelTiles, players],
                 this.bulletType.range
             );
-
             if (hits.some(hit => players.includes(hit)))
             {
                 this._triggered = true;
                 this._prepareWalk();
                 this._prepareShoot();
-                this._walkTime = randFloat(0, ENEMY_WALK_INTERVAL_MAX);
-                this._shootTime = randFloat(0, ENEMY_SHOOT_INTERVAL_MAX);
             }
         }
 

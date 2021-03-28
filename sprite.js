@@ -68,6 +68,18 @@ class SpriteList
         return this._sprites[index];
     }
 
+    // Calls f for each sprite in the list. Supports destroy() while iterating.
+    forEach(f)
+    {
+        for (let i = 0; i < this.length; i++)
+        {
+            let sprite = this.get(i);
+            f(sprite);
+            if (sprite.isDestroyed())
+                i--;
+        }
+    }
+
     // Array methods
 
     push(...sprites)
@@ -135,16 +147,22 @@ class Sprite
         this._destroyed = true;
     }
 
+    isDestroyed()
+    {
+        return this._destroyed;
+    }
+
     getImageView()
     {
         return this._imageView;
     }
 
-    setImageView(imageView)
+    // Sets the image view and optionally automatically sets the hitbox
+    setImageView(imageView, autoHitbox=true)
     {
         this._imageView = imageView;
 
-        if (imageView !== null)
+        if (imageView !== null && autoHitbox)
         {
             this.setRectangularHitbox(
                 0,
@@ -226,7 +244,7 @@ class Sprite
             thisY += this._hitbox.y;
             spriteX += this._hitbox.x;
             spriteY += this._hitbox.y;
-            let distSq = (thisX - spriteX) ** 2 + (thisY - spriteY) ** 2;
+            let distSq = distanceSqr(thisX, thisY, spriteX, spriteY);
             return distSq < (this._hitbox.r + sprite._hitbox.r) ** 2;
         }
         else
@@ -281,6 +299,12 @@ class Sprite
         let self = this;
         return sprites.filter(sprite => self.checkCollisionWithSprite(sprite));
     }
+
+    // Checks if this sprite is within EXPLOSION_RADIUS of an explosion at x, y
+    isNearExplosion(x, y)
+    {
+        return distance(x, y, this.x, this.y) <= EXPLOSION_RADIUS;
+    }
 }
 
 // Data about a collision
@@ -319,11 +343,10 @@ class PhysicsSprite extends Sprite
         
         // Collision properties
         this._collidableSpriteLists = [];
-        this.oncollision = null;
+        this.onCollision = null;
         this.collisionDampingX = 1;
         this.collisionDampingY = 1;
         this.angularCollisionDamping = 1;
-
         this._groundedState = 0;
         this._lastCollisionX = null;
         this._lastCollisionY = null;
@@ -389,6 +412,8 @@ class PhysicsSprite extends Sprite
         this.velX *= this.dampingX;
         this.velY *= this.dampingY;
         this.angularVel *= this.angularDamping;
+        if (this.velY < -TERMINAL_VELOCITY)
+            this.velY = -TERMINAL_VELOCITY;
 
         // Collisions
         let collidingWith = [];
@@ -408,9 +433,9 @@ class PhysicsSprite extends Sprite
                 this.angularVel *= -1;
 
             // Call oncollision event
-            if (this.oncollision !== null)
+            if (this.onCollision !== null)
             {
-                this.oncollision(collidingWith.map(sprite => new Collision(
+                this.onCollision(collidingWith.map(sprite => new Collision(
                     this,
                     sprite,
                     this._lastCollisionX ?? this.x,
@@ -458,6 +483,14 @@ class PhysicsSprite extends Sprite
     ejectCollisionY()
     {
         this._ejectCollision(false);
+    }
+
+    // Explosion event
+    onExplosion(x, y)
+    {
+        let dir = Math.atan2(this.y - y, this.x - x);
+        this.velX += Math.cos(dir) * EXPLOSION_FORCE;
+        this.velY += Math.sin(dir) * EXPLOSION_FORCE;
     }
 
     // Move out of collision in the y-axis then the x-axis

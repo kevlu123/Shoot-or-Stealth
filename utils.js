@@ -123,6 +123,11 @@ function randBool()
     return randInt(0, 2) === 1;
 }
 
+function randAngle()
+{
+    return randFloat(0, 2 * Math.PI);
+}
+
 // Returns incr added to val, wrapped around a range
 function wrappedIncrement(val, incr, min, maxExcl)
 {
@@ -157,5 +162,12 @@ function raycast(srcX, srcY, angle, collidableSpriteLists, range=100, step=4)
     }
     while (hits.length === 0 && dist < range);
 
+    ray.destroy();
     return hits;
+}
+
+// Returns a random item in an array
+function randItem(array)
+{
+    return array[randInt(0, array.length)];
 }
