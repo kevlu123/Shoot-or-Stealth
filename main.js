@@ -4,6 +4,7 @@ let input = new Input();
 let canvas = null;
 let gfx = null;
 let time = 0;
+let gameState = GameState.MENU;
 
 // Global sprite groups
 let levelTiles = new SpriteList();
@@ -11,10 +12,13 @@ let players = new SpriteList();
 let enemies = new SpriteList();
 let bullets = new SpriteList();
 let entities = new SpriteList();
+let endTiles = new SpriteList();
 
 
 function loadLevel(levelData)
 {
+    Sprite.destroyAllSprites();
+
     // Load level data
     let level = new Level(levelData);
 
@@ -27,6 +31,11 @@ function loadLevel(levelData)
     
     // Make camera follow player
     gfx.target = player;
+
+    // Register end tiles
+    endTiles.push(...level.getEndTiles());
+
+    gameState = GameState.IN_PROGRESS;
 }
 
 function drawLevel()
@@ -94,8 +103,21 @@ function onUpdate()
         enemy.update();
     for (let entity of entities)
         entity.update();
-        
     Particle.update();
+
+    // Check win. Player must stand on end tile
+    if (players.some(
+            player => player.getGroundedOn().filter(
+                sprite => endTiles.includes(sprite)
+            ).length > 0
+        ))
+    {
+        win();
+    }
+
+    // Check lose
+    if (players.every(player => player.isDead()))
+        lose();
 
     // Update input
     input.update();
@@ -104,11 +126,7 @@ function onUpdate()
 function createExplosion(x, y)
 {
     ExplosionBurstParticle.create(x, y);
-    gfx.shake(
-        SCREEN_SHAKE_FREQUENCY,
-        SCREEN_SHAKE_AMPLITUDE,
-        SCREEN_SHAKE_DURATION
-    );
+    gfx.shake();
 
     function checkExplosion(sprite)
     {
@@ -125,6 +143,26 @@ function createExplosion(x, y)
 
     // Check entities
     entities.forEach(checkExplosion);
+}
+
+// Win event
+function win()
+{
+    if (gameState === GameState.WIN)
+        return;
+
+    gameState = GameState.WIN;
+    gfx.shake();
+}
+
+// Lose event
+function lose()
+{
+    if (gameState === GameState.LOST)
+        return;
+        
+    gameState = GameState.LOST;
+    gfx.shake();
 }
 
 // Resize canvas when window resizes

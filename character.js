@@ -35,6 +35,13 @@ class Character extends PhysicsSprite
         let entries = Array.from(this._timesSinceShot.entries());
         for (let [key, val] of entries)
             this._timesSinceShot.set(key, val + FRAME_DURATION);
+
+        // Die if player has fallen out of the world
+        if (this.y < 0 && !this.isDead())
+        {
+            this._die();
+            this.flopDead(signof(this.velX));
+        }
     }
 
     isDead()
@@ -108,6 +115,13 @@ class Character extends PhysicsSprite
 
         bullet.addCollidableSpriteList(entities);
         bullets.push(bullet);
+    }
+
+    // Flop the body
+    flopDead(velXSign)
+    {
+        this.velX = DIE_VELOCITY_X * velXSign;
+        this.velY = DIE_VELOCITY_Y;
     }
 
     onExplosion(x, y)

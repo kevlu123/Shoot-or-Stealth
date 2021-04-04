@@ -31,3 +31,11 @@ class SurfaceTile extends Tile
         super(TileAtlasIndex.SURFACE, x, y);
     }
 }
+
+class EndTile extends Tile
+{
+    constructor(x, y)
+    {
+        super(TileAtlasIndex.WALL, x, y);
+    }
+}

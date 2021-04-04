@@ -17,8 +17,7 @@ class Level
             lines[i] = lines[i].padEnd(this._width, ' ');
 
         // Set default spawn and level finish positions
-        this._startPos = [0, 0];
-        this._endPos = [1, 0];
+        this._endTiles = new SpriteList();
 
         // Load each tile
         for (let y = 0; y < this._height; y++)
@@ -34,6 +33,7 @@ class Level
                     // Create level tiles
                     case '.': tileClass = WallTile; break;
                     case '_': tileClass = SurfaceTile; break;
+                    case 'e': tileClass = EndTile; break;
                     
                     // Spawn enemies
                     case '1': enemyClass = Enemy1; break;
@@ -43,14 +43,8 @@ class Level
                     // Create entities
                     case 'x': entityClass = BombBlock; break;
 
-                    case 's':
-                        // Set start position
-                        this._startPos = [x, y];
-                        break;
-                    case 'e':
-                        // Set finish position
-                        this._endPos = [x, y];
-                        break;
+                    // Set start position
+                    case 's': this._startPos = [x, y]; break;
 
                 }
 
@@ -62,6 +56,9 @@ class Level
                         TILE_SIZE * y
                     );
                     levelTiles.push(tile);
+
+                    if (tileClass === EndTile)
+                        this._endTiles.push(tile);
                 }
                 else if (enemyClass !== null)
                 {
@@ -92,5 +89,10 @@ class Level
     getEndPos()
     {
         return this._endPos;
+    }
+
+    getEndTiles()
+    {
+        return this._endTiles;
     }
 }

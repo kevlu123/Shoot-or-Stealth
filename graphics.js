@@ -17,12 +17,18 @@ class Graphics
 
     update()
     {
+        // Interpolate camera towards target
         let targetX = this.target?.x ?? 0;
         let targetY = this.target?.y ?? 0;
-
         this.x = lerp(this.x, targetX, CAMERA_LERP);
         this.y = lerp(this.y, targetY, CAMERA_LERP);
+
+        // Clamp camera
+        let minY = this.height() / PIXEL_SIZE / 2;
+        if (this.y < minY)
+            this.y = minY; 
         
+        // Advance shake waveform
         this._shakeWaveform.shift();
     }
 
@@ -116,7 +122,7 @@ class Graphics
     }
 
     // Shakes the screen
-    shake(frequency=8, amplitude=3, duration=0.2)
+    shake(frequency=SCREEN_SHAKE_FREQUENCY, amplitude=SCREEN_SHAKE_AMPLITUDE, duration=SCREEN_SHAKE_DURATION)
     {
         this._shakeWaveform = [];
         for (let t = 0; t <= duration + FRAME_DURATION; t += FRAME_DURATION)

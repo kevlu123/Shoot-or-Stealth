@@ -4,11 +4,6 @@ const CHARACTER_ATLAS_FILENAME = "characters.png";
 const TILE_ATLAS_FILENAME = "tiles.png";
 const OBJECT_ATLAS_FILENAME = "objects.png";
 
-// Layout
-const BACKGROUND_COLOUR = [0x87, 0xCE, 0xFF];
-const PIXEL_SIZE = 2;
-const TILE_SIZE = 16;
-
 // Bullet properties (where applicable)
 const BULLET_ANGULAR_VELOCITY = -0.3;
 const BULLET_ANGULAR_DAMPING = 0.98;
@@ -63,6 +58,9 @@ const EXPLOSION_PARTICLE_SIZE = 5;
 
 
 // Other settings
+const BACKGROUND_COLOUR = [0x87, 0xCE, 0xFF];
+const PIXEL_SIZE = 2;
+const TILE_SIZE = 16;
 const GRAVITY_STRENGTH = -0.4;
 const COYOTE_JUMP_TIME = 0.05;
 const CAMERA_LERP = 0.06;
@@ -101,7 +99,7 @@ class TileAtlasIndex
 class ObjectAtlasIndex
 {
     static DEFAULT_BULLET = 0;
-    static SNIPER_BULLET = 1;
+    static SNIPER_BULLET = 0;
     static FAST_BULLET = 1;
     static GRENADE_BULLET = 2;
     static BOMB = 3;

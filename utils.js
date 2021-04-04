@@ -61,6 +61,14 @@ class Rect
     }
 }
 
+class GameState
+{
+    static MENU = 0;
+    static IN_PROGRESS = 1;
+    static WON = 2;
+    static LOST = 3;
+}
+
 // Clamps x between min and max
 function clamp(x, min, max)
 {

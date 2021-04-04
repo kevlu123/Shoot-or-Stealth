@@ -80,6 +80,16 @@ class SpriteList
         }
     }
 
+    // Appends sprites that are not already in this list
+    pushUnique(...sprites)
+    {
+        this._sprites.push(...sprites);
+        for (let sprite of sprites)
+            if (!sprite._destroyed && !this.includes(sprite))
+                sprite._spriteLists.push(this);
+        this.length += sprites.length;
+    }
+
     // Array methods
 
     push(...sprites)
@@ -105,11 +115,26 @@ class SpriteList
     {
         return this._sprites.some(predicate);
     }
+
+    every(predicate)
+    {
+        return this._sprites.every(predicate);
+    }
+
+    concat(spriteList)
+    {
+        let li = new SpriteList();
+        li.push(...this._sprites);
+        li.push(...spriteList._sprites);
+        return li;
+    }
 }
 
 // Represents a 2D image in space
 class Sprite
 {
+    static _allSprites = new SpriteList();
+
     constructor(filename)
     {
         this._imageView = null;
@@ -134,6 +159,11 @@ class Sprite
         let sprite = new spriteClass();
         sprite.setImageView(imageView);
         return sprite;
+    }
+
+    static destroyAllSprites()
+    {
+        this._allSprites.forEach(sprite => sprite.destroy());
     }
 
     destroy()
@@ -350,6 +380,7 @@ class PhysicsSprite extends Sprite
         this._groundedState = 0;
         this._lastCollisionX = null;
         this._lastCollisionY = null;
+        this._groundedOn = new SpriteList();
     }
 
     // Applies velocity and gravity and checks for collision
@@ -357,6 +388,8 @@ class PhysicsSprite extends Sprite
     {
         if (this._groundedState > 0)
             this._groundedState -= FRAME_DURATION;
+        else if (this._groundedOn.length > 0)
+            this._groundedOn = new SpriteList();
 
         // Apply gravity
         if (this.useGravity)
@@ -382,7 +415,10 @@ class PhysicsSprite extends Sprite
                 
                 // If collided while moving down, the sprite is grounded
                 if (velYSign < 0)
+                {
                     this._groundedState = COYOTE_JUMP_TIME;
+                    this._groundedOn.pushUnique(...collidingWithY);
+                }
 
                 // Bounce off
                 this.velY *= -this.bouncynessY;
@@ -471,6 +507,12 @@ class PhysicsSprite extends Sprite
         for (let list of this._collidableSpriteLists)
             hits.push(...this.getCollisionWithSprites(list));
         return hits;
+    }
+
+    // Gets a list of sprites that this sprite is currently grounded on
+    getGroundedOn()
+    {
+        return this._groundedOn;
     }
 
     // Move out of collision in the x-axis

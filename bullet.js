@@ -40,12 +40,9 @@ class Bullet extends PhysicsSprite
                     // If sprite is character, damage the character
                     sprite.damage(bulletType.damage);
 
-                    // If character is dead, bounce the body
+                    // If character is dead, flop the body
                     if (sprite.isDead())
-                    {
-                        sprite.velX = DIE_VELOCITY_X * signof(collision.relVelX);
-                        sprite.velY = DIE_VELOCITY_Y;
-                    }
+                        sprite.flopDead(signof(collision.relVelX));
                     
                     // Create blood particles
                     BloodBurstParticle.create(
