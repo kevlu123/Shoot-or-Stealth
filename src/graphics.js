@@ -47,7 +47,7 @@ class Graphics
         this._ctx.imageSmoothingEnabled = false;
 
         let imageView = sprite.getImageView();
-        if (imageView === null)
+        if (imageView === null || sprite.alpha === 0)
             return;
 
         // Get shake offset
@@ -59,7 +59,7 @@ class Graphics
             shakeY = this._shakeWaveform[0][1];
         }
 
-        let dstX =  PIXEL_SIZE * (Math.floor(sprite.x) - this.x - shakeX) + this.width() / 2;
+        let dstX =  PIXEL_SIZE * (Math.floor(sprite.x) - this.x + shakeX) + this.width() / 2;
         let dstY = -PIXEL_SIZE * (Math.floor(sprite.y) - this.y - shakeY + imageView.height) + this.height() / 2;
         let dstW =  PIXEL_SIZE * imageView.width;
         let ctxSaved = false;
@@ -90,6 +90,17 @@ class Graphics
             dstX *= -1;
             dstW *= -1;
         }
+
+        // Transparency
+        if (sprite.alpha !== 1)
+        {
+            if (!ctxSaved)
+            {
+                ctxSaved = true;
+                this._ctx.save();
+            }
+            this._ctx.globalAlpha = sprite.alpha;
+        }
         
         // Draw image
         this._ctx.drawImage(
@@ -109,6 +120,93 @@ class Graphics
             this._ctx.restore();
     }
 
+    // Draws a UI sprite
+    drawUISprite(sprite)
+    {
+        let imageView = sprite.getImageView();
+        if (imageView === null || sprite.alpha === 0)
+            return;
+
+        // Get shake offset
+        let shakeX = 0;
+        let shakeY = 0;
+        if (this._shakeWaveform.length > 0)
+        {
+            shakeX = this._shakeWaveform[0][0] * PIXEL_SIZE;
+            shakeY = this._shakeWaveform[0][1] * PIXEL_SIZE;
+        }
+
+        // Calculate width and height in pixels
+        let rawWidth;
+        let rawHeight;
+        
+        let setSizeByWidth = function()
+        {
+            // Use size as width
+            rawWidth = sprite.size * this.width();
+            rawHeight = sprite.size / sprite.getAspectRatio() * this.width();
+        }.bind(this);
+        
+        let setSizeByHeight = function()
+        {
+            // Use size as height
+            rawWidth = sprite.size * sprite.getAspectRatio() * this.height();
+            rawHeight = sprite.size * this.height();
+        }.bind(this);
+
+        // Calculate width and height in pixels
+        switch (sprite.scalingType)
+        {
+            case UIScaling.WIDTH:
+                setSizeByWidth();
+                break;
+            case UIScaling.HEIGHT:
+                setSizeByHeight();
+                break;
+            case UIScaling.WIDTH_THEN_HEIGHT:
+                setSizeByWidth();
+                if (rawHeight > this.height())
+                    setSizeByHeight();
+                break;
+            case UIScaling.HEIGHT_THEN_WIDTH:
+                setSizeByHeight();
+                if (rawWidth > this.width())
+                    setSizeByWidth();
+                break;
+        }
+        
+
+        let ctxSaved = false;
+
+        // Transparency
+        if (sprite.alpha !== 1)
+        {
+            if (!ctxSaved)
+            {
+                ctxSaved = true;
+                this._ctx.save();
+            }
+            this._ctx.globalAlpha = sprite.alpha;
+        }
+
+        // Draw to screen
+        this._ctx.drawImage(
+            imageView.getImage(),
+            imageView.x,
+            imageView.getImage().height - imageView.y - imageView.height,
+            imageView.width,
+            imageView.height,
+            sprite.x(this.width(), this.height()) - rawWidth * sprite.pivotX + shakeX,
+            this.height() - sprite.y(this.width(), this.height()) - rawHeight * (1 - sprite.pivotY) + shakeY,
+            rawWidth,
+            rawHeight
+        );
+
+        // Restore context settings
+        if (ctxSaved)
+            this._ctx.restore();
+    }
+
     // Get the width of the canvas
     width()
     {
@@ -124,12 +222,15 @@ class Graphics
     // Shakes the screen
     shake(frequency=SCREEN_SHAKE_FREQUENCY, amplitude=SCREEN_SHAKE_AMPLITUDE, duration=SCREEN_SHAKE_DURATION)
     {
-        this._shakeWaveform = [];
-        for (let t = 0; t <= duration + FRAME_DURATION; t += FRAME_DURATION)
+        for (let t = 0, i = 0; t <= duration + FRAME_DURATION; t += FRAME_DURATION, i++)
         {
             let sampleX = amplitude * Math.sin(2 * Math.PI * frequency * t);
             let sampleY = amplitude * Math.sin(2 * Math.PI * frequency * t * 0.7);
-            this._shakeWaveform.push([sampleX, sampleY]);
+
+            if (i >= this._shakeWaveform.length)
+                this._shakeWaveform.push([0, 0]);
+            this._shakeWaveform[i][0] += sampleX;
+            this._shakeWaveform[i][1] += sampleY;
         }
     }
 

@@ -67,6 +67,14 @@ class Input
             return this._keyStates.get(key) === KeyState.JUST_RELEASED;
     }
 
+    getAnyKeyDown()
+    {
+        for (let state of this._keyStates.values())
+            if (state === KeyState.JUST_HELD)
+                return true;
+        return false;
+    }
+
     _onkeydown(ev)
     {
         if (!this.getKey(ev.code))

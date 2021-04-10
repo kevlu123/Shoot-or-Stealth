@@ -32,10 +32,24 @@ class SurfaceTile extends Tile
     }
 }
 
+// End of the level
 class EndTile extends Tile
 {
     constructor(x, y)
     {
         super(TileAtlasIndex.WALL, x, y);
+    }
+}
+
+// Indestructible
+class BarrierTile extends Tile
+{
+    constructor(x, y)
+    {
+        super(TileAtlasIndex.WALL, x, y);
+    }
+    
+    onExplosion()
+    {
     }
 }

@@ -42,7 +42,7 @@ class Bullet extends PhysicsSprite
 
                     // If character is dead, flop the body
                     if (sprite.isDead())
-                        sprite.flopDead(signof(collision.relVelX));
+                        sprite.flop(signof(collision.relVelX));
                     
                     // Create blood particles
                     BloodBurstParticle.create(

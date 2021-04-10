@@ -61,14 +61,6 @@ class Rect
     }
 }
 
-class GameState
-{
-    static MENU = 0;
-    static IN_PROGRESS = 1;
-    static WON = 2;
-    static LOST = 3;
-}
-
 // Clamps x between min and max
 function clamp(x, min, max)
 {
@@ -107,6 +99,12 @@ function distanceSqr(x1, y1, x2, y2)
 function distance(x1, y1, x2, y2)
 {
     return Math.sqrt(distanceSqr(x1, y1, x2, y2));
+}
+
+// Removes the item at an index from an array
+function removeIndexFromArray(array, index)
+{
+    array.splice(index, 1);
 }
 
 // Removes an item from an array

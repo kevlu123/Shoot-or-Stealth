@@ -39,8 +39,9 @@ class Character extends PhysicsSprite
         // Die if player has fallen out of the world
         if (this.y < 0 && !this.isDead())
         {
-            this._die();
-            this.flopDead(signof(this.velX));
+            if (!isLastLevel())
+                this._die();
+            this.flop(this.flippedX ? -1 : 1);
         }
     }
 
@@ -118,9 +119,9 @@ class Character extends PhysicsSprite
     }
 
     // Flop the body
-    flopDead(velXSign)
+    flop(dirSign)
     {
-        this.velX = DIE_VELOCITY_X * velXSign;
+        this.velX = DIE_VELOCITY_X * dirSign;
         this.velY = DIE_VELOCITY_Y;
     }
 
@@ -215,13 +216,19 @@ class Enemy extends Character
             );
             if (hits.some(hit => players.includes(hit)))
             {
-                this._triggered = true;
+                this._trigger();
                 this._prepareWalk();
                 this._prepareShoot();
             }
         }
 
         super.update();
+    }
+
+    _trigger()
+    {
+        this._triggered = true;
+        onEnemyTriggered();
     }
 
     _prepareWalk()

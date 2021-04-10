@@ -1,8 +1,32 @@
 
 // Files
-const CHARACTER_ATLAS_FILENAME = "characters.png";
-const TILE_ATLAS_FILENAME = "tiles.png";
-const OBJECT_ATLAS_FILENAME = "objects.png";
+const CHARACTER_ATLAS_FILENAME = "img/characters.png";
+const TILE_ATLAS_FILENAME = "img/tiles.png";
+const OBJECT_ATLAS_FILENAME = "img/objects.png";
+
+const TITLESCREEN_FILENAME = "img/title.png";
+const TITLESCREEN_IMAGE_WIDTH = 900;
+const TITLESCREEN_IMAGE_HEIGHT = 600;
+
+const WATERMARK_FILENAME = "img/watermark.png";
+const WATERMARK_IMAGE_WIDTH = 320;
+const WATERMARK_IMAGE_HEIGHT = 20;
+
+const GAMEOVER_FILENAME = "img/gameover.png";
+const GAMEOVER_IMAGE_WIDTH = 800;
+const GAMEOVER_IMAGE_HEIGHT = 160;
+
+const NEXTLEVEL_FILENAME = "img/nextlevel.png";
+const NEXTLEVEL_IMAGE_WIDTH = 1300;
+const NEXTLEVEL_IMAGE_HEIGHT = 216;
+
+const STEALTHED_FILENAME = "img/stealthed.png";
+const STEALTHED_IMAGE_WIDTH = 1370;
+const STEALTHED_IMAGE_HEIGHT = 216;
+
+const WINSCREEN_FILENAME = "img/winscreen.png";
+const WINSCREEN_IMAGE_WIDTH = 1430;
+const WINSCREEN_IMAGE_HEIGHT = 370;
 
 // Bullet properties (where applicable)
 const BULLET_ANGULAR_VELOCITY = -0.3;
@@ -15,10 +39,11 @@ const BULLET_SPAWN_DISTANCE_THRESHOLD = 32;
 // Explosions
 const EXPLOSION_DAMAGE = 100;
 const EXPLOSION_FORCE = 5;
-const EXPLOSION_RADIUS = 100;
+const EXPLOSION_RADIUS = 80;
 const SCREEN_SHAKE_FREQUENCY = 10;
 const SCREEN_SHAKE_AMPLITUDE = 3;
 const SCREEN_SHAKE_DURATION = 0.15;
+const BOMB_EXPLOSION_DELAY = 0.5;
 
 // Character properties
 const PLAYER_DAMPING_X = 0.9;
@@ -29,7 +54,7 @@ const JUMP_VELOCITY = 8;
 const PLAYER_HP = 25;
 const ENEMY_HP = 3;
 const DIE_VELOCITY_X = 3;
-const DIE_VELOCITY_Y = 3;
+const DIE_VELOCITY_Y = 4;
 const DIE_DAMPING_X = 0.96;
 const TERMINAL_VELOCITY = 16;
 
@@ -107,6 +132,7 @@ class ObjectAtlasIndex
     static EXPLOSION_PARTICLE_1 = 5;
     static EXPLOSION_PARTICLE_2 = 6;
     static EXPLOSION_PARTICLE_3 = 7;
+    static FADE_SCREEN = 8;
 }
 
 // Bullet properties
@@ -190,9 +216,3 @@ const GRENADE_BULLET = {
         10
     )
 };
-
-const PRIMARY_BULLET_TYPES = [
-    DEFAULT_BULLET,
-    FAST_BULLET,
-    SNIPER_BULLET,
-];

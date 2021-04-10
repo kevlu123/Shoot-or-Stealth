@@ -34,6 +34,7 @@ class Level
                     case '.': tileClass = WallTile; break;
                     case '_': tileClass = SurfaceTile; break;
                     case 'e': tileClass = EndTile; break;
+                    case 'b': tileClass = BarrierTile; break;
                     
                     // Spawn enemies
                     case '1': enemyClass = Enemy1; break;

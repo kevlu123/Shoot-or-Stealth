@@ -4,18 +4,14 @@ class ImageView
 {
     constructor(filename, x, y, w, h)
     {
-        this.x = x ?? 0;
-        this.y = y ?? 0;
+        this.x = x;
+        this.y = y;
         this.width = w;
         this.height = h;
 
         // Load image
         this._image = new Image();
-        this._image.onload = this._onload.bind(this);
         this._image.src = filename;
-
-        // Wait for image to load
-        while (this.width === undefined) {}
     }
 
     // Create an ImageView from a single row sprite atlas with a height of TILE_SIZE.
@@ -34,16 +30,6 @@ class ImageView
     getImage()
     {
         return this._image;
-    }
-
-    // Set width and height once image is loaded
-    _onload()
-    {
-        if (this.width === undefined || this.height === undefined)
-        {
-            this.width = this._image.width;
-            this.height = this._image.height;
-        }
     }
 }
 
@@ -135,10 +121,10 @@ class Sprite
 {
     static _allSprites = new SpriteList();
 
-    constructor(filename)
+    constructor(imageView)
     {
-        this._imageView = null;
-        if (filename)
+        this._imageView = imageView;
+        if (imageView)
             this.setImageView(new ImageView(filename));
         else
             this.setCircularHitbox(0);
@@ -149,16 +135,12 @@ class Sprite
         this.rotationPivotX = 0;
         this.rotationPivotY = 0;
         this.flippedX = false;
+        this.alpha = 1;
+
         this._spriteLists = [];
         this._destroyed = false;
-    }
 
-    // Create a sprite of type spriteClass from an ImageView
-    static fromImageView(imageView, spriteClass=Sprite)
-    {
-        let sprite = new spriteClass();
-        sprite.setImageView(imageView);
-        return sprite;
+        Sprite._allSprites.push(this);
     }
 
     static destroyAllSprites()
@@ -354,9 +336,9 @@ class Collision
 // Moving sprite that is affected by collisions
 class PhysicsSprite extends Sprite
 {
-    constructor(filename)
+    constructor(imageView)
     {
-        super(filename);
+        super(imageView);
 
         // Translational properties
         this.velX = 0;

@@ -21,6 +21,7 @@ class BombBlock extends Entity
     constructor(x, y)
     {
         super(x, y, ObjectAtlasIndex.BOMB);
+        this._willExplode = false;
     }
 
     onShot(bulletType)
@@ -38,7 +39,18 @@ class BombBlock extends Entity
     _explode()
     {
         // Destroy this and create another explosion
-        this.destroy();
-        createExplosion(this.x, this.y);
+        if (!this._willExplode)
+        {
+            this._willExplode = true;
+            Timer.addTimer(BOMB_EXPLOSION_DELAY, function()
+            {
+                // Check if this still exists
+                if (!this.isDestroyed())
+                {
+                    this.destroy();
+                    createExplosion(this.x, this.y);
+                }
+            }.bind(this));
+        }
     }
 }
