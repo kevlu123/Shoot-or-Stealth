@@ -124,9 +124,9 @@ function randFloat(min, maxExcl)
     return Math.random() * (maxExcl - min) + min;
 }
 
-function randBool()
+function randBool(probability=0.5)
 {
-    return randInt(0, 2) === 1;
+    return randFloat(0, 1) < probability;
 }
 
 function randAngle()

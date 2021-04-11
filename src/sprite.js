@@ -2,16 +2,15 @@
 // Represents a part of an image. Useful for sprite sheets.
 class ImageView
 {
-    constructor(filename, x, y, w, h)
+    constructor(filename, x=null, y=null, w=null, h=null)
     {
-        this.x = x;
-        this.y = y;
-        this.width = w;
-        this.height = h;
-
-        // Load image
-        this._image = new Image();
-        this._image.src = filename;
+        this._filename = filename;
+        this._image = ImageLoader.get(filename);
+    
+        this.x = x ?? 0;
+        this.y = y ?? 0;
+        this.width = w ?? this._image.width;
+        this.height = h ?? this._image.height;
     }
 
     // Create an ImageView from a single row sprite atlas with a height of TILE_SIZE.
@@ -30,6 +29,17 @@ class ImageView
     getImage()
     {
         return this._image;
+    }
+
+    clone()
+    {
+        return new ImageView(
+            this._filename,
+            this.x,
+            this.y,
+            this.width,
+            this.height
+        );
     }
 }
 
@@ -106,7 +116,7 @@ class SpriteList
     {
         return this._sprites.every(predicate);
     }
-
+    
     concat(spriteList)
     {
         let li = new SpriteList();
@@ -119,13 +129,10 @@ class SpriteList
 // Represents a 2D image in space
 class Sprite
 {
-    static _allSprites = new SpriteList();
-
     constructor(imageView)
     {
-        this._imageView = imageView;
         if (imageView)
-            this.setImageView(new ImageView(filename));
+            this.setImageView(imageView);
         else
             this.setCircularHitbox(0);
 
@@ -139,15 +146,13 @@ class Sprite
 
         this._spriteLists = [];
         this._destroyed = false;
-
-        Sprite._allSprites.push(this);
     }
 
-    static destroyAllSprites()
+    // Virtual update function
+    update()
     {
-        this._allSprites.forEach(sprite => sprite.destroy());
     }
-
+    
     destroy()
     {
         for (let list of this._spriteLists)
@@ -452,7 +457,6 @@ class PhysicsSprite extends Sprite
 
             // Call oncollision event
             if (this.onCollision !== null)
-            {
                 this.onCollision(collidingWith.map(sprite => new Collision(
                     this,
                     sprite,
@@ -461,7 +465,16 @@ class PhysicsSprite extends Sprite
                     thisVelX - sprite.velX,
                     thisVelY - sprite.velY,
                 )));
-            }
+            for (let sprite of collidingWith)
+                if ("onCollision" in sprite && sprite.onCollision !== null)
+                    sprite.onCollision([new Collision(
+                        sprite,
+                        this,
+                        this._lastCollisionX ?? this.x,
+                        this._lastCollisionY ?? this.y,
+                        sprite.velX - thisVelX,
+                        sprite.velY - thisVelY
+                    )]);
         }
     }
 

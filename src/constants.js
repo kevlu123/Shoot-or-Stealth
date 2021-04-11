@@ -3,30 +3,12 @@
 const CHARACTER_ATLAS_FILENAME = "img/characters.png";
 const TILE_ATLAS_FILENAME = "img/tiles.png";
 const OBJECT_ATLAS_FILENAME = "img/objects.png";
-
 const TITLESCREEN_FILENAME = "img/title.png";
-const TITLESCREEN_IMAGE_WIDTH = 900;
-const TITLESCREEN_IMAGE_HEIGHT = 600;
-
 const WATERMARK_FILENAME = "img/watermark.png";
-const WATERMARK_IMAGE_WIDTH = 320;
-const WATERMARK_IMAGE_HEIGHT = 20;
-
 const GAMEOVER_FILENAME = "img/gameover.png";
-const GAMEOVER_IMAGE_WIDTH = 800;
-const GAMEOVER_IMAGE_HEIGHT = 160;
-
 const NEXTLEVEL_FILENAME = "img/nextlevel.png";
-const NEXTLEVEL_IMAGE_WIDTH = 1300;
-const NEXTLEVEL_IMAGE_HEIGHT = 216;
-
 const STEALTHED_FILENAME = "img/stealthed.png";
-const STEALTHED_IMAGE_WIDTH = 1370;
-const STEALTHED_IMAGE_HEIGHT = 216;
-
 const WINSCREEN_FILENAME = "img/winscreen.png";
-const WINSCREEN_IMAGE_WIDTH = 1430;
-const WINSCREEN_IMAGE_HEIGHT = 370;
 
 // Bullet properties (where applicable)
 const BULLET_ANGULAR_VELOCITY = -0.3;
@@ -37,7 +19,7 @@ const BULLET_SPAWN_OFFSET_Y = 6;
 const BULLET_SPAWN_DISTANCE_THRESHOLD = 32;
 
 // Explosions
-const EXPLOSION_DAMAGE = 100;
+const EXPLOSION_DAMAGE = 25;
 const EXPLOSION_FORCE = 5;
 const EXPLOSION_RADIUS = 80;
 const SCREEN_SHAKE_FREQUENCY = 10;
@@ -47,6 +29,7 @@ const BOMB_EXPLOSION_DELAY = 0.5;
 
 // Character properties
 const PLAYER_DAMPING_X = 0.9;
+const PLAYER_DAMPING_X_LADDER = 0.7;
 const PLAYER_WALK_SPEED = 0.5;
 const ENEMY_DAMPING_X = 0.8;
 const ENEMY_WALK_SPEED = 0.4;
@@ -57,6 +40,9 @@ const DIE_VELOCITY_X = 3;
 const DIE_VELOCITY_Y = 4;
 const DIE_DAMPING_X = 0.96;
 const TERMINAL_VELOCITY = 16;
+const LADDER_SPEED_Y = 1;
+const LADDER_FALL_SPEED = 0.3;
+const MAX_GRENADES = 5;
 
 // Enemy AI
 const ENEMY_WALK_INTERVAL_MIN = 0.5;
@@ -81,6 +67,12 @@ const EXPLOSION_PARTICLE_MAX_VEL = 10;
 const EXPLOSION_PARTICLE_LIFETIME = 2;
 const EXPLOSION_PARTICLE_SIZE = 5;
 
+const TILE_PARTICLE_COUNT = 2;
+const TILE_DESTROY_PARTICLE_COUNT = 20;
+const TILE_PARTICLE_MAX_VEL = 5;
+const TILE_PARTICLE_MIN_SIZE = 2;
+const TILE_PARTICLE_MAX_SIZE_EXCL = 5;
+const TILE_PARTICLE_LIFETIME = 2;
 
 // Other settings
 const BACKGROUND_COLOUR = [0x87, 0xCE, 0xFF];
@@ -90,6 +82,9 @@ const GRAVITY_STRENGTH = -0.4;
 const COYOTE_JUMP_TIME = 0.05;
 const CAMERA_LERP = 0.06;
 const FRAME_DURATION = 1 / 60;
+const CRATE_SPAWN_RATE = 0.05;
+const TILE_HP = 5;
+const DENSE_WALL_HP = 26;
 
 // Key bindings
 class Key
@@ -119,6 +114,12 @@ class TileAtlasIndex
 {
     static WALL = 0;
     static SURFACE = 1;
+    static LADDER = 2;
+    static LANDMINE = 3;
+    static LANDMINE_ACTIVE = 4;
+    static BARRIER = 5;
+    static FLAG = 6;
+    static DENSE_WALL = 7;
 }
 
 class ObjectAtlasIndex
@@ -133,6 +134,11 @@ class ObjectAtlasIndex
     static EXPLOSION_PARTICLE_2 = 6;
     static EXPLOSION_PARTICLE_3 = 7;
     static FADE_SCREEN = 8;
+    static GRENADE_CRATE = 9;
+    static DEFAULT_GUN_CRATE = 11;
+    static FAST_GUN_CRATE = 10;
+    static SNIPER_GUN_CRATE = 12;
+    static GRENADE_GUN_CRATE = 13;
 }
 
 // Bullet properties
@@ -151,7 +157,7 @@ const DEFAULT_BULLET = {
     useCircularHitbox: false,
     atlasRect: new Rect(
         0,
-        7,
+        0,
         16,
         2
     )
@@ -171,7 +177,7 @@ const FAST_BULLET = {
     useCircularHitbox: false,
     atlasRect: new Rect(
         0,
-        7,
+        0,
         8,
         2
     )
@@ -191,7 +197,7 @@ const SNIPER_BULLET = {
     useCircularHitbox: false,
     atlasRect: new Rect(
         0,
-        7,
+        0,
         16,
         2
     )

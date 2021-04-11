@@ -20,6 +20,7 @@ class Level
         this._endTiles = new SpriteList();
 
         // Load each tile
+        let surfaceTiles = new SpriteList();
         for (let y = 0; y < this._height; y++)
             for (let x = 0; x < this._width; x++)
             {
@@ -31,10 +32,13 @@ class Level
                 switch (c)
                 {
                     // Create level tiles
-                    case '.': tileClass = WallTile; break;
-                    case '_': tileClass = SurfaceTile; break;
-                    case 'e': tileClass = EndTile; break;
-                    case 'b': tileClass = BarrierTile; break;
+                    case '.': tileClass = WallTile;     break;
+                    case ',': tileClass = DenseWallTile;     break;
+                    case '_': tileClass = SurfaceTile;  break;
+                    case 'e': tileClass = EndTile;      break;
+                    case 'B': tileClass = BarrierTile;  break;
+                    case 'H': tileClass = LadderTile;   break;
+                    case 'm': tileClass = LandMineTile; break;
                     
                     // Spawn enemies
                     case '1': enemyClass = Enemy1; break;
@@ -43,10 +47,10 @@ class Level
                     
                     // Create entities
                     case 'x': entityClass = BombBlock; break;
+                    case 'b': entityClass = BoxBlock;  break;
 
                     // Set start position
                     case 's': this._startPos = [x, y]; break;
-
                 }
 
                 if (tileClass !== null)
@@ -56,10 +60,26 @@ class Level
                         TILE_SIZE * x,
                         TILE_SIZE * y
                     );
-                    levelTiles.push(tile);
+
+                    if (tileClass === SurfaceTile)
+                        surfaceTiles.push(tile);
 
                     if (tileClass === EndTile)
+                    {
                         this._endTiles.push(tile);
+
+                        // Create flag
+                        let flag = new Sprite(ImageView.fromAtlas(
+                            TILE_ATLAS_FILENAME,
+                            TileAtlasIndex.FLAG
+                        ));
+                        flag.x = tile.x;
+                        flag.y = tile.y + TILE_SIZE;
+                        backgroundTiles.push(flag);
+                    }
+                    
+                    if (tileClass !== LadderTile)
+                        levelTiles.push(tile);
                 }
                 else if (enemyClass !== null)
                 {
@@ -79,6 +99,22 @@ class Level
                     );
                     entities.push(entity);
                 }
+            }
+
+        // Randomly spawn crates
+        for (let tile of surfaceTiles)
+            if (randBool(CRATE_SPAWN_RATE))
+            {
+                let crateClass = randItem(ItemCrate.getCrateTypes());
+                let crate = new crateClass(
+                    tile.x,
+                    tile.y + TILE_SIZE
+                );
+
+                if (crate.isColliding())
+                    crate.destroy();
+                else
+                    entities.push(crate);
             }
     }
 

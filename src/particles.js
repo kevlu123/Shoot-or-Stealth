@@ -134,3 +134,38 @@ class ExplosionBurstParticle extends BurstParticle
         ObjectAtlasIndex.EXPLOSION_PARTICLE_3,
     ];
 }
+
+class TileBurstParticle extends BurstParticle
+{
+    static create(x, y, imageView, count)
+    {
+        // Create a burst of particles with no image view set
+        let particles = BurstParticle.create(
+            null,
+            x,
+            y,
+            count,
+            TILE_PARTICLE_MAX_VEL,
+            TILE_PARTICLE_LIFETIME,
+        );
+
+        for (let particle of particles)
+        {
+            // Choose random size and offset for each particle
+            let size = randInt(
+                TILE_PARTICLE_MIN_SIZE,
+                TILE_PARTICLE_MAX_SIZE_EXCL,
+            );
+            let offsetX = imageView.x + randInt(0, imageView.width - size);
+            let offsetY = imageView.y + randInt(0, imageView.height - size);
+
+            // Set image view
+            let newImageView = imageView.clone();
+            newImageView.x = offsetX;
+            newImageView.y = offsetY;
+            newImageView.width = size;
+            newImageView.height = size;
+            particle.setImageView(newImageView);
+        }
+    }
+}

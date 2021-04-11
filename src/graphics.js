@@ -160,18 +160,26 @@ class Graphics
             case UIScaling.WIDTH:
                 setSizeByWidth();
                 break;
+
             case UIScaling.HEIGHT:
                 setSizeByHeight();
                 break;
+
             case UIScaling.WIDTH_THEN_HEIGHT:
                 setSizeByWidth();
                 if (rawHeight > this.height())
                     setSizeByHeight();
                 break;
+
             case UIScaling.HEIGHT_THEN_WIDTH:
                 setSizeByHeight();
                 if (rawWidth > this.width())
                     setSizeByWidth();
+                break;
+                
+            case UIScaling.CUSTOM:
+                rawWidth  = sprite.size[0](this.width(), this.height());
+                rawHeight = sprite.size[1](this.width(), this.height());
                 break;
         }
         

@@ -10,8 +10,11 @@ class Character extends PhysicsSprite
         this._isPlayer = isPlayer;
         this._hp = hp;
         this._dead = false;
+        this._touchingLadder = false;
+        this._onLadder = false;
+        this._grenadeCount = MAX_GRENADES;
         this.walkSpeed = PLAYER_WALK_SPEED;
-        this.bulletType = bulletType;
+        this._bulletType = bulletType;
         this.x = x;
         this.y = y;
         this.useGravity = true;
@@ -19,9 +22,9 @@ class Character extends PhysicsSprite
         this.setImageView(ImageView.fromAtlas(CHARACTER_ATLAS_FILENAME, characterAtlasIndex));
         this.setRectangularHitbox(
             1,
-            TILE_SIZE - 1,
+            15,
             0,
-            TILE_SIZE
+            15
         );
         this.addCollidableSpriteList(levelTiles);
         this.addCollidableSpriteList(entities);
@@ -29,6 +32,7 @@ class Character extends PhysicsSprite
 
     update()
     {
+        // Update physics
         super.update();
 
         // Add delta time to each value in _timesSinceShot
@@ -43,11 +47,51 @@ class Character extends PhysicsSprite
                 this._die();
             this.flop(this.flippedX ? -1 : 1);
         }
+
+        // Ladder physics
+        let prevLadderState = this._onLadder;
+        this._touchingLadder = this.checkCollisionWithSprites(ladders);
+        this._onLadder = this._touchingLadder && !this.isGrounded() && !this.isDead();
+
+        if (prevLadderState != this._onLadder)
+        {
+            this.velY = 0;
+            if (this._onLadder)
+            {
+                this.dampingX = PLAYER_DAMPING_X_LADDER;
+                this.dampingY = 0;
+                this.useGravity = false;
+            }
+            else
+            {
+                this.dampingX = PLAYER_DAMPING_X;
+                this.dampingY = 1;
+                this.useGravity = true;
+            }
+        }
+
+        if (this._onLadder)
+            this.velY -= LADDER_FALL_SPEED;
     }
 
     isDead()
     {
         return this._dead;
+    }
+
+    onShot(bulletType, collision)
+    {
+        this.damage(bulletType.damage);
+
+        // If character is dead, flop the body
+        if (this.isDead())
+            this.flop(signof(collision.relVelX));
+        
+        // Create blood particles
+        BloodBurstParticle.create(
+            collision.x,
+            collision.y
+        );
     }
 
     damage(amount)
@@ -78,23 +122,43 @@ class Character extends PhysicsSprite
         this.flippedX = false;
     }
 
+    moveDown()
+    {
+        if (this._dead || !this._touchingLadder)
+            return;
+
+        this.velY -= LADDER_SPEED_Y - LADDER_FALL_SPEED;
+    }
+
+    moveUp()
+    {
+        if (this._dead || !this._touchingLadder)
+            return;
+
+        this.y += LADDER_SPEED_Y + LADDER_FALL_SPEED;
+        if (this.checkCollisionWithSprites(ladders))
+            this.velY = LADDER_SPEED_Y;
+        this.y -= LADDER_SPEED_Y;
+    }
+
     jump()
     {
-        if (this._dead)
+        if (this._dead || !this.isGrounded())
             return;
 
         this.velY = JUMP_VELOCITY;
     }
 
     // Creates a bullet if cooldown has passed
-    shoot(bulletType=this.bulletType)
+    shoot()
     {
         if (this._dead)
-            return;
+            return false;
 
         // Check if cooldown for the bulletType is ready
+        let bulletType = this._bulletType;
         if (this._timesSinceShot.has(bulletType) && this._timesSinceShot.get(bulletType) <= bulletType.cooldown)
-            return;
+            return false;
         this._timesSinceShot.set(bulletType, 0);
         
         // Get spawn position
@@ -116,6 +180,26 @@ class Character extends PhysicsSprite
 
         bullet.addCollidableSpriteList(entities);
         bullets.push(bullet);
+        return true;
+    }
+
+    // Shoot a grenade if character still has grenades
+    throwGrenade()
+    {
+        if (this._grenadeCount > 0)
+        {
+            let bulletType = this._bulletType;
+            this._bulletType = GRENADE_BULLET;
+            if (this.shoot())
+                this._grenadeCount--;
+            this._bulletType = bulletType;
+        }
+    }
+
+    // Reset grenade count
+    refillGrenades()
+    {
+        this._grenadeCount = MAX_GRENADES;
     }
 
     // Flop the body
@@ -129,6 +213,11 @@ class Character extends PhysicsSprite
     {
         super.onExplosion(x, y);
         this.damage(EXPLOSION_DAMAGE);
+    }
+
+    setGun(bulletType)
+    {
+        this._bulletType = bulletType;
     }
 
     _die()
@@ -212,7 +301,7 @@ class Enemy extends Character
                 this.y + TILE_SIZE / 2,
                 this.flippedX ? Math.PI : 0,
                 [levelTiles, players],
-                this.bulletType.range
+                this._bulletType.range
             );
             if (hits.some(hit => players.includes(hit)))
             {

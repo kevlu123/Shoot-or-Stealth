@@ -25,6 +25,8 @@ let enemies = new SpriteList();
 let bullets = new SpriteList();
 let entities = new SpriteList();
 let endTiles = new SpriteList();
+let ladders = new SpriteList();
+let backgroundTiles = new SpriteList();
 
 // UI sprites
 let titleSprite = null;
@@ -55,11 +57,7 @@ function loadUI()
     function createUI(uiName)
     {
         let sprite = new UISprite(new ImageView(
-            eval(uiName + "_FILENAME"),
-            0,
-            0,
-            eval(uiName + "_IMAGE_WIDTH"),
-            eval(uiName + "_IMAGE_HEIGHT")
+            eval(uiName + "_FILENAME")
         ));
         sprite.alpha = 0;
         sprite.size = 0.9;
@@ -118,7 +116,15 @@ function loadLevel(index)
 {
     let levelData = LEVELS[index];
 
-    Sprite.destroyAllSprites();
+    // Destroy sprites from previous level
+    levelTiles     .forEach(sprite => sprite.destroy());
+    players        .forEach(sprite => sprite.destroy());
+    enemies        .forEach(sprite => sprite.destroy());
+    bullets        .forEach(sprite => sprite.destroy());
+    entities       .forEach(sprite => sprite.destroy());
+    endTiles       .forEach(sprite => sprite.destroy());
+    ladders        .forEach(sprite => sprite.destroy());
+    backgroundTiles.forEach(sprite => sprite.destroy());
 
     // Load level data
     let level = new Level(levelData);
@@ -139,14 +145,21 @@ function loadLevel(index)
     gameoverSprite.alpha = 0;
     nextLevelSprite.alpha = 0;
     stealthedSprite.alpha = 0;
+
+    stealthing = true;
 }
 
 function drawLevel()
 {
     gfx.drawBackground(BACKGROUND_COLOUR);
 
+    for (let tile of backgroundTiles)
+        gfx.drawSprite(tile);
+
     for (let tile of levelTiles)
         gfx.drawSprite(tile);
+    for (let ladder of ladders)
+        gfx.drawSprite(ladder);
 
     for (let enemy of enemies)
         gfx.drawSprite(enemy);
@@ -197,12 +210,16 @@ function controlPlayer()
         players.get(0).moveLeft();
     if (input.getKey(Key.RIGHT))
         players.get(0).moveRight();
-    if (input.getKeyDown(Key.JUMP) && players.get(0).isGrounded())
+    if (input.getKey(Key.DOWN))
+        players.get(0).moveDown();
+    if (input.getKey(Key.UP))
+        players.get(0).moveUp();
+    if (input.getKeyDown(Key.JUMP))
         players.get(0).jump();
     if (input.getKey(Key.SHOOT))
         players.get(0).shoot();
     if (input.getKeyDown(Key.GRENADE))
-        players.get(0).shoot(GRENADE_BULLET);
+        players.get(0).throwGrenade();
 }
 
 // Update function for menu
@@ -314,6 +331,8 @@ function onUpdate()
         enemy.update();
     for (let entity of entities)
         entity.update();
+    for (let tile of levelTiles)
+        tile.update();
     Particle.update();
 
     // Update input
@@ -406,15 +425,34 @@ function main()
     canvas = document.getElementById("canvas");
     gfx = new Graphics(canvas);
 
-    loadUI();
+    function onImagesLoaded()
+    {
+        loadUI();
 
-    // Load first level
-    levelIndex = 0;
-    loadLevel(levelIndex);
+        // Load first level
+        levelIndex = 0;
+        loadLevel(levelIndex);
 
-    // Register update function
-    onWindowResize();
-    setInterval(onUpdate, FRAME_DURATION * 1000);
+        // Register update function
+        onWindowResize();
+        setInterval(onUpdate, FRAME_DURATION * 1000);
+    }
+
+    // Load images before calling code that requires image size to be known
+    ImageLoader.loadImages(
+        [
+            CHARACTER_ATLAS_FILENAME,
+            TILE_ATLAS_FILENAME,
+            OBJECT_ATLAS_FILENAME,
+            TITLESCREEN_FILENAME,
+            WATERMARK_FILENAME,
+            GAMEOVER_FILENAME,
+            NEXTLEVEL_FILENAME,
+            STEALTHED_FILENAME,
+            WINSCREEN_FILENAME,
+        ],
+        onImagesLoaded
+    );
 }
 
 // Register callbacks

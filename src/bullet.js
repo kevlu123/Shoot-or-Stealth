@@ -35,25 +35,10 @@ class Bullet extends PhysicsSprite
             for (let collision of collisions)
             {
                 let sprite = collision.collidee;
-                if ("damage" in sprite)
-                {
-                    // If sprite is character, damage the character
-                    sprite.damage(bulletType.damage);
 
-                    // If character is dead, flop the body
-                    if (sprite.isDead())
-                        sprite.flop(signof(collision.relVelX));
-                    
-                    // Create blood particles
-                    BloodBurstParticle.create(
-                        collision.x,
-                        collision.y
-                    );
-                }
-                
                 // Call onShot event
                 if ("onShot" in sprite)
-                    sprite.onShot(bulletType);
+                    sprite.onShot(bulletType, collision);
                 
                 // If the bullet does not follow physics, destroy it upon collision
                 if (!bulletType.usePhysics)
