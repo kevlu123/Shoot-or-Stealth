@@ -13,12 +13,16 @@ class Character extends PhysicsSprite
         this._touchingLadder = false;
         this._onLadder = false;
         this._grenadeCount = MAX_GRENADES;
+        this._isWalking = false;
+        this._animationScheduled = false;
+        this._animationIndex = 0;
         this.walkSpeed = PLAYER_WALK_SPEED;
         this._bulletType = bulletType;
         this.x = x;
         this.y = y;
         this.useGravity = true;
         this.dampingX = PLAYER_DAMPING_X;
+        this.rotationPivotY--;
         this.setImageView(new ImageView(
             CHARACTER_ATLAS_FILENAME,
             0,
@@ -75,6 +79,36 @@ class Character extends PhysicsSprite
                 this.useGravity = true;
             }
         }
+
+        // Walk animation
+        if (!this._isWalking)
+            this._setIdleAnimation();
+        else if (!this._animationScheduled)
+        {
+            this._animationScheduled = true;
+            this._nextAnimationFrame();
+        }
+        this._isWalking = false;
+    }
+
+    _setIdleAnimation()
+    {
+        this.getImageView().x = 0;
+    }
+
+    _nextAnimationFrame()
+    {
+        if (this._isWalking)
+        {
+            this._animationIndex = (this._animationIndex + 1) % CHARACTER_WALK_ANIMATION_FRAMES;
+            this.getImageView().x = TILE_SIZE * (this._animationIndex + 1);
+
+            Timer.addTimer(CHARACTER_WALK_ANIMATION_FRAME_DURATION, this._nextAnimationFrame.bind(this));
+        }
+        else
+        {
+            this._animationScheduled = false;
+        }
     }
 
     isDead()
@@ -114,6 +148,7 @@ class Character extends PhysicsSprite
 
         this.velX -= this.walkSpeed;
         this.flippedX = true;
+        this._isWalking = true;
     }
 
     moveRight()
@@ -123,6 +158,7 @@ class Character extends PhysicsSprite
 
         this.velX += this.walkSpeed;
         this.flippedX = false;
+        this._isWalking = true;
     }
 
     moveDown()
@@ -234,12 +270,12 @@ class Character extends PhysicsSprite
             return;
 
         this._dead = true;
+        this._isWalking = false;
         this._hp = 0;
         this.angle = Math.PI / 2;
         this.dampingX = DIE_DAMPING_X;
 
-        this.rotationPivotY--;
-        this._hitbox.y++;
+        this._hitbox.y = 1;
     }
 }
 
@@ -410,6 +446,11 @@ class Player extends Character
 
     revive()
     {
+        this._dead = false;
+        this._isWalking = false;
         this._hp = PLAYER_HP;
+        this.angle = 0;
+        this.dampingX = PLAYER_DAMPING_X;
+        this._hitbox.y = 0;
     }
 }
