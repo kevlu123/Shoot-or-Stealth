@@ -10,16 +10,29 @@ class Graphics
 
         this.x = 0;
         this.y = 0;
-        this.target = null;
+        this.targets = [];
 
         this._shakeWaveform = [];
     }
 
     update()
     {
+        // Get average target position
+        let targetX = 0;
+        let targetY = 0;
+        if (this.targets.length > 0)
+        {
+            for (let target of this.targets)
+            {
+                targetX += target.x;
+                targetY += target.y;
+            }
+            targetX /= this.targets.length;
+            targetY /= this.targets.length;
+        }
+
+
         // Interpolate camera towards target
-        let targetX = this.target?.x ?? 0;
-        let targetY = this.target?.y ?? 0;
         this.x = lerp(this.x, targetX, CAMERA_LERP);
         this.y = lerp(this.y, targetY, CAMERA_LERP);
 
@@ -124,7 +137,7 @@ class Graphics
     drawUISprite(sprite)
     {
         let imageView = sprite.getImageView();
-        if (imageView === null || sprite.alpha === 0)
+        if (imageView === null)
             return;
 
         // Get shake offset
@@ -136,22 +149,19 @@ class Graphics
             shakeY = this._shakeWaveform[0][1] * PIXEL_SIZE;
         }
 
-        // Calculate width and height in pixels
-        let rawWidth;
-        let rawHeight;
         
         let setSizeByWidth = function()
         {
             // Use size as width
-            rawWidth = sprite.size * this.width();
-            rawHeight = sprite.size / sprite.getAspectRatio() * this.width();
+            sprite.rawWidth = sprite.size * this.width();
+            sprite.rawHeight = sprite.size / sprite.getAspectRatio() * this.width();
         }.bind(this);
         
         let setSizeByHeight = function()
         {
             // Use size as height
-            rawWidth = sprite.size * sprite.getAspectRatio() * this.height();
-            rawHeight = sprite.size * this.height();
+            sprite.rawWidth = sprite.size * sprite.getAspectRatio() * this.height();
+            sprite.rawHeight = sprite.size * this.height();
         }.bind(this);
 
         // Calculate width and height in pixels
@@ -167,22 +177,24 @@ class Graphics
 
             case UIScaling.WIDTH_THEN_HEIGHT:
                 setSizeByWidth();
-                if (rawHeight > this.height())
+                if (sprite.rawHeight > this.height())
                     setSizeByHeight();
                 break;
 
             case UIScaling.HEIGHT_THEN_WIDTH:
                 setSizeByHeight();
-                if (rawWidth > this.width())
+                if (sprite.rawWidth > this.width())
                     setSizeByWidth();
                 break;
                 
             case UIScaling.CUSTOM:
-                rawWidth  = sprite.size[0](this.width(), this.height());
-                rawHeight = sprite.size[1](this.width(), this.height());
+                sprite.rawWidth  = sprite.size[0](this.width(), this.height());
+                sprite.rawHeight = sprite.size[1](this.width(), this.height());
                 break;
         }
         
+        if (sprite.alpha === 0)
+            return;
 
         let ctxSaved = false;
 
@@ -204,10 +216,10 @@ class Graphics
             imageView.getImage().height - imageView.y - imageView.height,
             imageView.width,
             imageView.height,
-            sprite.x(this.width(), this.height()) - rawWidth * sprite.pivotX + shakeX,
-            this.height() - sprite.y(this.width(), this.height()) - rawHeight * (1 - sprite.pivotY) + shakeY,
-            rawWidth,
-            rawHeight
+            sprite.x(this.width(), this.height()) - sprite.rawWidth * sprite.pivotX + shakeX,
+            this.height() - sprite.y(this.width(), this.height()) - sprite.rawHeight * (1 - sprite.pivotY) + shakeY,
+            sprite.rawWidth,
+            sprite.rawHeight
         );
 
         // Restore context settings

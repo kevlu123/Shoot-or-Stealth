@@ -32,6 +32,9 @@ class UISprite
         // Determines what the size property means
         this.scalingType = UIScaling.WIDTH_THEN_HEIGHT;
         this.size = 1;
+
+        this.rawWidth = 0;
+        this.rawHeight = 0;
     }
 
     getImageView()

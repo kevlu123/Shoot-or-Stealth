@@ -123,11 +123,6 @@ class Level
         return this._startPos;
     }
 
-    getEndPos()
-    {
-        return this._endPos;
-    }
-
     getEndTiles()
     {
         return this._endTiles;

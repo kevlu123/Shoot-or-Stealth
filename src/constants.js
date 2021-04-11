@@ -9,6 +9,8 @@ const GAMEOVER_FILENAME = "img/gameover.png";
 const NEXTLEVEL_FILENAME = "img/nextlevel.png";
 const STEALTHED_FILENAME = "img/stealthed.png";
 const WINSCREEN_FILENAME = "img/winscreen.png";
+const SOLIDCOLOURS_ATLAS_FILENAME = "img/solidcolours.png";
+const HEALTHBAR_FILENAME = "img/healthbar.png";
 
 // Bullet properties (where applicable)
 const BULLET_ANGULAR_VELOCITY = -0.3;
@@ -34,15 +36,15 @@ const PLAYER_WALK_SPEED = 0.5;
 const ENEMY_DAMPING_X = 0.8;
 const ENEMY_WALK_SPEED = 0.4;
 const JUMP_VELOCITY = 8;
-const PLAYER_HP = 25;
+const PLAYER_HP = 15;
 const ENEMY_HP = 3;
 const DIE_VELOCITY_X = 3;
-const DIE_VELOCITY_Y = 4;
+const DIE_VELOCITY_Y = 4.5;
 const DIE_DAMPING_X = 0.96;
 const TERMINAL_VELOCITY = 16;
 const LADDER_SPEED_Y = 1;
-const LADDER_FALL_SPEED = 0.3;
 const MAX_GRENADES = 5;
+const CHARACTER_ANIMATION_FRAMES = 3;
 
 // Enemy AI
 const ENEMY_WALK_INTERVAL_MIN = 0.5;
@@ -96,18 +98,29 @@ class Key
     static SHOOT = "KeyF";
     static JUMP = "KeyG";
     static GRENADE = "KeyH";
-    static SWITCH_WEAPON_L = "KeyQ";
-    static SWITCH_WEAPON_R = "KeyE";
+
+    static P2_LEFT = "ArrowLeft";
+    static P2_RIGHT = "ArrowRight";
+    static P2_UP = "ArrowUp";
+    static P2_DOWN = "ArrowDown";
+    static P2_SHOOT = "Period";
+    static P2_JUMP = "Slash";
+    static P2_GRENADE = "ShiftRight";
 }
 
 // Indices into sprite atlases
 
 class CharacterAtlasIndex
 {
-    static PLAYER_1 = 0;
-    static ENEMY1_1 = 9;
-    static ENEMY2_1 = 12;
-    static ENEMY3_1 = 15;
+    static PLAYER_1_FAST = 8;
+    static PLAYER_1_DEFAULT = 7;
+    static PLAYER_1_SNIPER = 6;
+    static PLAYER_2_FAST = 5;
+    static PLAYER_2_DEFAULT = 4;
+    static PLAYER_2_SNIPER = 3;
+    static ENEMY1 = 2;
+    static ENEMY2 = 1;
+    static ENEMY3 = 0;
 }
 
 class TileAtlasIndex
@@ -129,16 +142,22 @@ class ObjectAtlasIndex
     static FAST_BULLET = 1;
     static GRENADE_BULLET = 2;
     static BOMB = 3;
-    static BLOOD_PARTICLE = 4;
-    static EXPLOSION_PARTICLE_1 = 5;
-    static EXPLOSION_PARTICLE_2 = 6;
-    static EXPLOSION_PARTICLE_3 = 7;
-    static FADE_SCREEN = 8;
-    static GRENADE_CRATE = 9;
-    static DEFAULT_GUN_CRATE = 11;
-    static FAST_GUN_CRATE = 10;
-    static SNIPER_GUN_CRATE = 12;
-    static GRENADE_GUN_CRATE = 13;
+    static GRENADE_CRATE = 4;
+    static FAST_GUN_CRATE = 5;
+    static DEFAULT_GUN_CRATE = 6;
+    static SNIPER_GUN_CRATE = 7;
+    static GRENADE_GUN_CRATE = 8;
+    static HEALTH_CRATE = 9;
+}
+
+class SolidColourAtlasIndex
+{
+    static BLOOD_PARTICLE = 0;
+    static EXPLOSION_PARTICLE_1 = 1;
+    static EXPLOSION_PARTICLE_2 = 2;
+    static EXPLOSION_PARTICLE_3 = 3;
+    static FADE_SCREEN = 4;
+    static HEALTH = 5;
 }
 
 // Bullet properties

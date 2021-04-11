@@ -84,15 +84,13 @@ class ItemCrate extends Entity
         {
             let playerCollisions = collisions.filter(c => players.includes(c.collidee));
             if (playerCollisions.length > 0)
-            {
                 this.onPickup(playerCollisions[0].collidee);
-                this.destroy();
-            }
         }.bind(this);
     }
 
     onPickup(player)
     {
+        this.destroy();
     }
 
     static getCrateTypes()
@@ -103,6 +101,7 @@ class ItemCrate extends Entity
             FastGunCrate,
             SniperGunCrate,
             GrenadeGunCrate,
+            HealthCrate,
         ];
     }
 }
@@ -116,6 +115,7 @@ class GrenadeCrate extends ItemCrate
 
     onPickup(player)
     {
+        super.onPickup(players);
         player.refillGrenades();
     }
 }
@@ -129,6 +129,7 @@ class DefaultGunCrate extends ItemCrate
 
     onPickup(player)
     {
+        super.onPickup(players);
         player.setGun(DEFAULT_BULLET);
     }
 }
@@ -142,6 +143,7 @@ class FastGunCrate extends ItemCrate
 
     onPickup(player)
     {
+        super.onPickup(players);
         player.setGun(FAST_BULLET);
     }
 }
@@ -155,6 +157,7 @@ class SniperGunCrate extends ItemCrate
 
     onPickup(player)
     {
+        super.onPickup(players);
         player.setGun(SNIPER_BULLET);
     }
 }
@@ -168,6 +171,24 @@ class GrenadeGunCrate extends ItemCrate
 
     onPickup(player)
     {
+        super.onPickup(players);
         player.setGun(GRENADE_BULLET);
+    }
+}
+
+class HealthCrate extends ItemCrate
+{
+    constructor(x, y)
+    {
+        super(x, y, ObjectAtlasIndex.HEALTH_CRATE);
+    }
+
+    onPickup(player)
+    {
+        if (player.getHealthPercentage() > 0)
+        {
+            super.onPickup(players);
+            player.heal();
+        }
     }
 }

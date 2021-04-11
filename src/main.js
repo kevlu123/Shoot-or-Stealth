@@ -17,6 +17,7 @@ let time = 0;
 let gameState = GameState.MENU;
 let levelIndex = 0;
 let stealthing = true;
+let level = null;
 
 // Global sprite groups
 let levelTiles = new SpriteList();
@@ -29,13 +30,20 @@ let ladders = new SpriteList();
 let backgroundTiles = new SpriteList();
 
 // UI sprites
-let titleSprite = null;
-let watermarkSprite = null;
-let fadeSprite = null;
-let gameoverSprite = null;
-let nextLevelSprite = null;
-let stealthedSprite = null;
-let winScreenSprite = null;
+let titleScreen = null;
+let watermark = null;
+let fadeOverlay = null;
+let gameoverScreen = null;
+let nextLevelScreen = null;
+let stealthedScreen = null;
+let winScreen = null;
+
+let healthbar = null;
+let healthbarContent = null;
+let grenadeCountSprite = null;
+let healthbarP2 = null;
+let healthbarContentP2 = null;
+let grenadeCountSpriteP2 = null;
 
 function isFirstLevel()
 {
@@ -54,42 +62,107 @@ function onEnemyTriggered()
 
 function loadUI()
 {
-    function createUI(uiName)
+    function createUI(filename, visible=true)
     {
         let sprite = new UISprite(new ImageView(
-            eval(uiName + "_FILENAME")
+            filename
         ));
-        sprite.alpha = 0;
+        if (!visible)
+            sprite.alpha = 0;
         sprite.size = 0.9;
         return sprite;
     }
 
     // Title
-    titleSprite = createUI("TITLESCREEN");
-    titleSprite.alpha = 1;
-    titleSprite.scalingType = UIScaling.WIDTH_THEN_HEIGHT;
+    titleScreen = createUI(TITLESCREEN_FILENAME);
 
     // Watermark
-    watermarkSprite = createUI("WATERMARK");
-    watermarkSprite.alpha = 1;
-    watermarkSprite.size = 0.3;
-    watermarkSprite.pivotX = 1;
-    watermarkSprite.pivotY = 0;
-    watermarkSprite.x = (w, h) => w;
-    watermarkSprite.y = (w, h) => 0;
+    watermark = new UISprite(new ImageView(
+        WATERMARK_FILENAME
+    ));
+    watermark.size = 0.3;
+    watermark.pivotX = 1;
+    watermark.pivotY = 0;
+    watermark.x = (w, h) => w;
+    watermark.y = (w, h) => 0;
 
     // Fading screen
-    fadeSprite = new UISprite(ImageView.fromAtlas(
-        OBJECT_ATLAS_FILENAME,
-        ObjectAtlasIndex.FADE_SCREEN
+    fadeOverlay = new UISprite(ImageView.fromAtlas(
+        SOLIDCOLOURS_ATLAS_FILENAME,
+        SolidColourAtlasIndex.FADE_SCREEN
     ));
-    fadeSprite.alpha = 0;
-    fadeSprite.size = 2;
+    fadeOverlay.alpha = 0;
+    fadeOverlay.size = 2;
+    
+    // Health bar
+    healthbar = new UISprite(new ImageView(
+        HEALTHBAR_FILENAME
+    ));
+    healthbar.x = (w, h) => h * 0.01;
+    healthbar.y = (w, h) => h * 0.01;
+    healthbar.pivotX = 0;
+    healthbar.pivotY = 0;
+    healthbar.scalingType = UIScaling.WIDTH;
+    healthbar.size = 0.35;
 
-    gameoverSprite = createUI("GAMEOVER");
-    nextLevelSprite = createUI("NEXTLEVEL");
-    stealthedSprite = createUI("STEALTHED");
-    winScreenSprite = createUI("WINSCREEN");
+    // Green part of health bar
+    healthbarContent = new UISprite(ImageView.fromAtlas(
+        SOLIDCOLOURS_ATLAS_FILENAME,
+        SolidColourAtlasIndex.HEALTH
+    ));
+    healthbarContent.x = (w, h) => h * 0.01;
+    healthbarContent.y = (w, h) => h * 0.01;
+    healthbarContent.pivotX = 0;
+    healthbarContent.pivotY = 0;
+    healthbarContent.scalingType = UIScaling.CUSTOM;
+    healthbarContent.size = [
+        (w, h) => 0.35 * w * players.get(0).getHealthPercentage(),
+        (w, h) => 0.35 / healthbar.getAspectRatio() * w
+    ];
+    
+    // P2 health bar
+    healthbarP2 = new UISprite(new ImageView(
+        HEALTHBAR_FILENAME
+    ));
+    healthbarP2.x = (w, h) => w - h * 0.01;
+    healthbarP2.y = (w, h) => h * 0.01;
+    healthbarP2.pivotX = 1;
+    healthbarP2.pivotY = 0;
+    healthbarP2.scalingType = UIScaling.WIDTH;
+    healthbarP2.size = 0.35;
+
+    // Green part of P2 health bar
+    healthbarContentP2 = new UISprite(ImageView.fromAtlas(
+        SOLIDCOLOURS_ATLAS_FILENAME,
+        SolidColourAtlasIndex.HEALTH
+    ));
+    healthbarContentP2.x = (w, h) => w - h * 0.01;
+    healthbarContentP2.y = (w, h) => h * 0.01;
+    healthbarContentP2.pivotX = 1;
+    healthbarContentP2.pivotY = 0;
+    healthbarContentP2.scalingType = UIScaling.CUSTOM;
+    healthbarContentP2.size = [
+        (w, h) => 0.35 * w * players.get(1).getHealthPercentage(),
+        (w, h) => 0.35 / healthbar.getAspectRatio() * w
+    ];
+
+    // Grenade count
+    grenadeCountSprite = new UISprite(ImageView.fromAtlas(
+        OBJECT_ATLAS_FILENAME,
+        ObjectAtlasIndex.GRENADE_BULLET,
+        0,
+        0,
+        8,
+        10
+    ));
+    grenadeCountSprite.pivotY = 0;
+    grenadeCountSprite.scalingType = UIScaling.WIDTH;
+    grenadeCountSprite.size = healthbar.size / 20;
+
+    gameoverScreen = createUI(GAMEOVER_FILENAME, false);
+    nextLevelScreen = createUI(NEXTLEVEL_FILENAME, false);
+    stealthedScreen = createUI(STEALTHED_FILENAME, false);
+    winScreen = createUI(WINSCREEN_FILENAME, false);
 }
 
 function reloadLevel()
@@ -105,7 +178,7 @@ function loadNextLevel()
         levelIndex++;
         
         if (isLastLevel())
-            winScreenSprite.alpha = 1;
+            winScreen.alpha = 1;
 
         loadLevel(levelIndex);
         gameState = GameState.GAMEPLAY;
@@ -118,7 +191,6 @@ function loadLevel(index)
 
     // Destroy sprites from previous level
     levelTiles     .forEach(sprite => sprite.destroy());
-    players        .forEach(sprite => sprite.destroy());
     enemies        .forEach(sprite => sprite.destroy());
     bullets        .forEach(sprite => sprite.destroy());
     entities       .forEach(sprite => sprite.destroy());
@@ -127,24 +199,22 @@ function loadLevel(index)
     backgroundTiles.forEach(sprite => sprite.destroy());
 
     // Load level data
-    let level = new Level(levelData);
+    level = new Level(levelData);
 
-    // Create player
-    let player = new Player(
-        TILE_SIZE * level.getStartPos()[0],
-        TILE_SIZE * level.getStartPos()[1]
-    );
-    players.push(player);
-    
-    // Make camera follow player
-    gfx.target = player;
+    // Set player position
+    for (let player of players)
+    {
+        player.x = TILE_SIZE * level.getStartPos()[0];
+        player.y = TILE_SIZE * level.getStartPos()[1];
+        player.revive();
+    }
 
     // Register end tiles
     endTiles.push(...level.getEndTiles());
 
-    gameoverSprite.alpha = 0;
-    nextLevelSprite.alpha = 0;
-    stealthedSprite.alpha = 0;
+    gameoverScreen.alpha = 0;
+    nextLevelScreen.alpha = 0;
+    stealthedScreen.alpha = 0;
 
     stealthing = true;
 }
@@ -157,7 +227,7 @@ function drawLevel()
         gfx.drawSprite(tile);
 
     for (let tile of levelTiles)
-        gfx.drawSprite(tile);
+        gfx.drawSprite(tile); 
     for (let ladder of ladders)
         gfx.drawSprite(ladder);
 
@@ -179,29 +249,50 @@ function drawLevel()
 
 function drawUI()
 {
-    if (titleSprite !== null)
-        gfx.drawUISprite(titleSprite);
+    fadeOverlay.sizeIsWidth = gfx.width() > gfx.height();
 
-    if (watermarkSprite !== null)
-        gfx.drawUISprite(watermarkSprite);
-
-    if (gameoverSprite !== null)
-        gfx.drawUISprite(gameoverSprite);
-        
-    if (nextLevelSprite !== null)
-        gfx.drawUISprite(nextLevelSprite);
-        
-    if (stealthedSprite !== null)
-        gfx.drawUISprite(stealthedSprite);
-        
-    if (winScreenSprite !== null)
-        gfx.drawUISprite(winScreenSprite);
-
-    if (fadeSprite !== null)
+    gfx.drawUISprite(healthbar);
+    gfx.drawUISprite(healthbarContent);
+    if (players.length === 2)
     {
-        fadeSprite.sizeIsWidth = gfx.width() > gfx.height();
-        gfx.drawUISprite(fadeSprite);
+        gfx.drawUISprite(healthbarP2);
+        gfx.drawUISprite(healthbarContentP2);
     }
+
+    for (let i = 0; i < players.get(0).getGrenadeCount(); i++)
+    {
+        grenadeCountSprite.pivotX = 0;
+        grenadeCountSprite.x = (w, h) => 0.01 * h + grenadeCountSprite.rawWidth * i;
+        grenadeCountSprite.y = (w, h) => 0.02 * h + healthbar.rawHeight;
+        gfx.drawUISprite(grenadeCountSprite);
+    }
+
+    if (players.length === 2)
+        for (let i = 0; i < players.get(1).getGrenadeCount(); i++)
+        {
+            grenadeCountSprite.pivotX = 1;
+            grenadeCountSprite.x = (w, h) => w - (0.01 * h + grenadeCountSprite.rawWidth * i);
+            grenadeCountSprite.y = (w, h) => 0.02 * h + healthbar.rawHeight;
+            gfx.drawUISprite(grenadeCountSprite);
+        }
+
+    gfx.drawUISprite(titleScreen);
+    gfx.drawUISprite(watermark);
+    gfx.drawUISprite(gameoverScreen);
+    gfx.drawUISprite(nextLevelScreen);
+    gfx.drawUISprite(stealthedScreen);
+    gfx.drawUISprite(winScreen);
+    gfx.drawUISprite(fadeOverlay);
+}
+
+function addPlayer2()
+{
+    let p1 = players.get(0);
+
+    let player = new Player(1);
+    player.x = p1.x;
+    player.y = p1.y;
+    players.push(player);
 }
 
 function controlPlayer()
@@ -220,6 +311,27 @@ function controlPlayer()
         players.get(0).shoot();
     if (input.getKeyDown(Key.GRENADE))
         players.get(0).throwGrenade();
+
+    if (players.length === 2)
+    {
+        if (input.getKey(Key.P2_LEFT))
+            players.get(1).moveLeft();
+        if (input.getKey(Key.P2_RIGHT))
+            players.get(1).moveRight();
+        if (input.getKey(Key.P2_DOWN))
+            players.get(1).moveDown();
+        if (input.getKey(Key.P2_UP))
+            players.get(1).moveUp();
+        if (input.getKeyDown(Key.P2_JUMP))
+            players.get(1).jump();
+        if (input.getKey(Key.P2_SHOOT))
+            players.get(1).shoot();
+        if (input.getKeyDown(Key.P2_GRENADE))
+            players.get(1).throwGrenade();
+    }
+
+    if (players.length === 1 && input.getKeyDown(Key.P2_SHOOT))
+        addPlayer2();
 }
 
 // Update function for menu
@@ -228,12 +340,18 @@ function updateMenu()
     controlPlayer();
 
     // Close menu and start game
+    let startGame = false;
     if (input.getKeyDown(Key.LEFT) || input.getKeyDown(Key.RIGHT))
+        startGame = true;
+    if (players.length === 2 && (input.getKeyDown(Key.P2_LEFT) || input.getKeyDown(Key.P2_RIGHT)))
+        startGame = true;
+
+    if (startGame)
     {
         gameState = GameState.GAMEPLAY;
 
         Animator.interpolate(
-            titleSprite,
+            titleScreen,
             "alpha",
             1,
             0,
@@ -241,7 +359,7 @@ function updateMenu()
         );
         
         Animator.interpolate(
-            watermarkSprite,
+            watermark,
             "alpha",
             1,
             0,
@@ -371,7 +489,7 @@ function win()
     Timer.addTimer(1, () =>
     {
         Animator.interpolate(
-            stealthing ? stealthedSprite : nextLevelSprite,
+            stealthing ? stealthedScreen : nextLevelScreen,
             "alpha",
             0,
             1,
@@ -390,7 +508,7 @@ function lose()
     Timer.addTimer(1, () =>
     {
         Animator.interpolate(
-            gameoverSprite,
+            gameoverScreen,
             "alpha",
             0,
             1,
@@ -403,7 +521,7 @@ function lose()
 function fadeScreen(duration, fadeIn)
 {
     Animator.interpolate(
-        fadeSprite,
+        fadeOverlay,
         "alpha",
         fadeIn ? 0 : 1,
         fadeIn ? 1 : 0,
@@ -424,9 +542,13 @@ function main()
     // Create graphics
     canvas = document.getElementById("canvas");
     gfx = new Graphics(canvas);
+    gfx.targets = players;
 
     function onImagesLoaded()
     {
+        // Create player
+        players.push(new Player());
+
         loadUI();
 
         // Load first level
@@ -450,6 +572,8 @@ function main()
             NEXTLEVEL_FILENAME,
             STEALTHED_FILENAME,
             WINSCREEN_FILENAME,
+            SOLIDCOLOURS_ATLAS_FILENAME,
+            HEALTHBAR_FILENAME,
         ],
         onImagesLoaded
     );

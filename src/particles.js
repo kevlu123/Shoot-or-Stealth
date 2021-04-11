@@ -86,8 +86,8 @@ class BloodBurstParticle extends BurstParticle
 
             // Set image view
             let imageView = ImageView.fromAtlas(
-                OBJECT_ATLAS_FILENAME,
-                ObjectAtlasIndex.BLOOD_PARTICLE,
+                SOLIDCOLOURS_ATLAS_FILENAME,
+                SolidColourAtlasIndex.BLOOD_PARTICLE,
                 0,
                 0,
                 size,
@@ -116,7 +116,7 @@ class ExplosionBurstParticle extends BurstParticle
         {
             // Set a random image view for each particle
             let imageView = ImageView.fromAtlas(
-                OBJECT_ATLAS_FILENAME,
+                SOLIDCOLOURS_ATLAS_FILENAME,
                 randItem(ExplosionBurstParticle._atlasIndices),
                 0,
                 0,
@@ -129,9 +129,9 @@ class ExplosionBurstParticle extends BurstParticle
 
     // Possible atlas indices for each particle
     static _atlasIndices = [
-        ObjectAtlasIndex.EXPLOSION_PARTICLE_1,
-        ObjectAtlasIndex.EXPLOSION_PARTICLE_2,
-        ObjectAtlasIndex.EXPLOSION_PARTICLE_3,
+        SolidColourAtlasIndex.EXPLOSION_PARTICLE_1,
+        SolidColourAtlasIndex.EXPLOSION_PARTICLE_2,
+        SolidColourAtlasIndex.EXPLOSION_PARTICLE_3,
     ];
 }
 

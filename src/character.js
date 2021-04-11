@@ -19,7 +19,13 @@ class Character extends PhysicsSprite
         this.y = y;
         this.useGravity = true;
         this.dampingX = PLAYER_DAMPING_X;
-        this.setImageView(ImageView.fromAtlas(CHARACTER_ATLAS_FILENAME, characterAtlasIndex));
+        this.setImageView(new ImageView(
+            CHARACTER_ATLAS_FILENAME,
+            0,
+            TILE_SIZE * characterAtlasIndex,
+            TILE_SIZE,
+            TILE_SIZE
+        ));
         this.setRectangularHitbox(
             1,
             15,
@@ -44,7 +50,7 @@ class Character extends PhysicsSprite
         if (this.y < 0 && !this.isDead())
         {
             if (!isLastLevel())
-                this._die();
+                this.die();
             this.flop(this.flippedX ? -1 : 1);
         }
 
@@ -69,9 +75,6 @@ class Character extends PhysicsSprite
                 this.useGravity = true;
             }
         }
-
-        if (this._onLadder)
-            this.velY -= LADDER_FALL_SPEED;
     }
 
     isDead()
@@ -101,7 +104,7 @@ class Character extends PhysicsSprite
 
         this._hp -= amount;
         if (this._hp <= 0)
-            this._die();
+            this.die();
     }
 
     moveLeft()
@@ -127,7 +130,7 @@ class Character extends PhysicsSprite
         if (this._dead || !this._touchingLadder)
             return;
 
-        this.velY -= LADDER_SPEED_Y - LADDER_FALL_SPEED;
+        this.velY -= LADDER_SPEED_Y;
     }
 
     moveUp()
@@ -135,7 +138,7 @@ class Character extends PhysicsSprite
         if (this._dead || !this._touchingLadder)
             return;
 
-        this.y += LADDER_SPEED_Y + LADDER_FALL_SPEED;
+        this.y += LADDER_SPEED_Y;
         if (this.checkCollisionWithSprites(ladders))
             this.velY = LADDER_SPEED_Y;
         this.y -= LADDER_SPEED_Y;
@@ -196,6 +199,11 @@ class Character extends PhysicsSprite
         }
     }
 
+    getGrenadeCount()
+    {
+        return this._grenadeCount;
+    }
+
     // Reset grenade count
     refillGrenades()
     {
@@ -220,12 +228,13 @@ class Character extends PhysicsSprite
         this._bulletType = bulletType;
     }
 
-    _die()
+    die()
     {
         if (this._dead)
             return;
 
         this._dead = true;
+        this._hp = 0;
         this.angle = Math.PI / 2;
         this.dampingX = DIE_DAMPING_X;
 
@@ -314,6 +323,12 @@ class Enemy extends Character
         super.update();
     }
 
+    damage(amount)
+    {
+        super.damage(amount);
+        this._trigger();
+    }
+
     _trigger()
     {
         this._triggered = true;
@@ -338,7 +353,7 @@ class Enemy1 extends Enemy
 {
     constructor(x, y)
     {
-        super(CharacterAtlasIndex.ENEMY1_1, x, y, DEFAULT_BULLET);
+        super(CharacterAtlasIndex.ENEMY1, x, y, DEFAULT_BULLET);
     }
 }
 
@@ -346,7 +361,7 @@ class Enemy2 extends Enemy
 {
     constructor(x, y)
     {
-        super(CharacterAtlasIndex.ENEMY2_1, x, y, FAST_BULLET);
+        super(CharacterAtlasIndex.ENEMY2, x, y, FAST_BULLET);
     }
 }
 
@@ -354,14 +369,47 @@ class Enemy3 extends Enemy
 {
     constructor(x, y)
     {
-        super(CharacterAtlasIndex.ENEMY3_1, x, y, SNIPER_BULLET);
+        super(CharacterAtlasIndex.ENEMY3, x, y, SNIPER_BULLET);
     }
 }
 
 class Player extends Character
 {
-    constructor(x, y)
+    constructor(playerNumber=0)
     {
-        super(CharacterAtlasIndex.PLAYER_1, x, y, DEFAULT_BULLET, true, PLAYER_HP);
+        super(
+            playerNumber === 0 ? CharacterAtlasIndex.PLAYER_1_DEFAULT : CharacterAtlasIndex.PLAYER_2_DEFAULT,
+            0,
+            0,
+            DEFAULT_BULLET,
+            true,
+            PLAYER_HP
+        );
+        this.playerNumber = playerNumber;
+    }
+
+    die()
+    {
+        if (!isLastLevel())
+            super.die();
+    }
+    
+    getHealthPercentage()
+    {
+        if (this._hp <= 0)
+            return 0;
+        else
+            return this._hp / PLAYER_HP;
+    }
+
+    heal()
+    {
+        if (this._hp > 0)
+            this._hp = PLAYER_HP;
+    }
+
+    revive()
+    {
+        this._hp = PLAYER_HP;
     }
 }
