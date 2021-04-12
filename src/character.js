@@ -135,9 +135,6 @@ class Character extends PhysicsSprite
 
     damage(amount)
     {
-        if (this._dead)
-            return;
-
         this._hp -= amount;
         if (this._hp <= 0)
             this.die();
@@ -360,6 +357,8 @@ class Enemy extends Character
     {
         super.damage(amount);
         this._trigger();
+        if (this._hp <= OVERKILL_HP)
+            this._overkill();
     }
 
     _trigger()
@@ -380,13 +379,23 @@ class Enemy extends Character
         this._shootTime = time + randFloat(ENEMY_SHOOT_INTERVAL_MIN, ENEMY_SHOOT_INTERVAL_MAX);
         this._shootDuration = randFloat(ENEMY_SHOOT_DURATION_MIN, ENEMY_SHOOT_DURATION_MAX);
     }
+
+    _overkill()
+    {
+        for (let i = 0; i < 15; i++)
+            BloodBurstParticle.create(
+                this.x + 8,
+                this.y + 8
+            );
+        this.destroy();
+    }
 }
 
 class Enemy1 extends Enemy
 {
     constructor(x, y)
     {
-        super(CharacterAtlasIndex.ENEMY1, x, y, DEFAULT_BULLET);
+        super(2, x, y, DEFAULT_BULLET);
     }
 }
 
@@ -394,7 +403,7 @@ class Enemy2 extends Enemy
 {
     constructor(x, y)
     {
-        super(CharacterAtlasIndex.ENEMY2, x, y, FAST_BULLET);
+        super(1, x, y, FAST_BULLET);
     }
 }
 
@@ -402,7 +411,7 @@ class Enemy3 extends Enemy
 {
     constructor(x, y)
     {
-        super(CharacterAtlasIndex.ENEMY3, x, y, SNIPER_BULLET);
+        super(0, x, y, SNIPER_BULLET);
     }
 }
 

@@ -36,7 +36,7 @@ const PLAYER_WALK_SPEED = 0.5;
 const ENEMY_DAMPING_X = 0.8;
 const ENEMY_WALK_SPEED = 0.4;
 const JUMP_VELOCITY = 8;
-const PLAYER_HP = 15;
+const PLAYER_HP = 10;
 const ENEMY_HP = 3;
 const DIE_VELOCITY_X = 3;
 const DIE_VELOCITY_Y = 4.5;
@@ -46,6 +46,7 @@ const LADDER_SPEED_Y = 1;
 const MAX_GRENADES = 5;
 const CHARACTER_WALK_ANIMATION_FRAMES = 2;
 const CHARACTER_WALK_ANIMATION_FRAME_DURATION = 0.1;
+const OVERKILL_HP = -6;
 
 // Enemy AI
 const ENEMY_WALK_INTERVAL_MIN = 0.5;
@@ -111,19 +112,6 @@ class Key
 }
 
 // Indices into sprite atlases
-
-class CharacterAtlasIndex
-{
-    static PLAYER_1_FAST = 8;
-    static PLAYER_1_DEFAULT = 7;
-    static PLAYER_1_SNIPER = 6;
-    static PLAYER_2_FAST = 5;
-    static PLAYER_2_DEFAULT = 4;
-    static PLAYER_2_SNIPER = 3;
-    static ENEMY1 = 2;
-    static ENEMY2 = 1;
-    static ENEMY3 = 0;
-}
 
 class TileAtlasIndex
 {

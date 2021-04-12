@@ -201,7 +201,7 @@ function loadLevel(index)
     let levelData = LEVELS[index];
 
     // Destroy sprites from previous level
-    levelTiles     .forEach(sprite => sprite.destroy());
+    levelTiles = new TileSpriteList();
     enemies        .forEach(sprite => sprite.destroy());
     bullets        .forEach(sprite => sprite.destroy());
     entities       .forEach(sprite => sprite.destroy());

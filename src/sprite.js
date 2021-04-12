@@ -194,7 +194,7 @@ class TileSpriteList
                         {
                             y--;
                             if (y <= 0)
-                                return;
+                                break;
 
                             x = -1;
                         }
