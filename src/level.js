@@ -80,6 +80,8 @@ class Level
                     
                     if (tileClass !== LadderTile)
                         levelTiles.push(tile);
+                    if ("update" in tile)
+                        updatableTiles.push(tile);
                 }
                 else if (enemyClass !== null)
                 {

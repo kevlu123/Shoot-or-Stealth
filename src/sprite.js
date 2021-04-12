@@ -86,6 +86,20 @@ class SpriteList
         this.length += sprites.length;
     }
 
+    // Remove a sprite from the list
+    remove(sprite)
+    {
+        removeFromArray(this._sprites, sprite);
+        this.length--;
+    }
+
+    // Delete all items from the list
+    clear()
+    {
+        this._sprites = [];
+        this.length = 0;
+    }
+
     // Array methods
 
     push(...sprites)
@@ -126,12 +140,76 @@ class SpriteList
     }
 }
 
+// Sprite list optimized for tiles
+class TileSpriteList
+{
+    constructor(sprites=[])
+    {
+        this._sprites = [];
+        this.push(...sprites);
+    }
+
+    // Array methods
+
+    push(...sprites)
+    {
+        for (let sprite of sprites)
+        {
+            let x = Math.floor(sprite.x / TILE_SIZE);
+            let y = Math.floor(sprite.y / TILE_SIZE);
+
+            resizeArray(this._sprites, y + 1, []);
+            resizeArray(this._sprites[y], x, null);
+            this._sprites[y][x] = sprite;
+
+            sprite._spriteLists.push(this);
+        }
+    }
+
+    get(x, y)
+    {
+        if (y < 0 || x < 0)
+            return null;
+        else if (y < this._sprites.length && x < this._sprites[y].length)
+            return this._sprites[y][x];
+        else
+            return null;
+    }
+    
+    // Calls f for each sprite in the list. Supports destroy() while iterating.
+    forEach(f)
+    {
+        for (let y = 0; y < this._sprites.length; y++)
+            for (let x = 0; x < this._sprites[y].length; x++)
+            {
+                let sprite = this.get(x, y);
+                if (sprite !== null)
+                {
+                    f(sprite);
+                    
+                    if (sprite.isDestroyed())
+                    {
+                        x--;
+                        if (x <= 0)
+                        {
+                            y--;
+                            if (y <= 0)
+                                return;
+
+                            x = -1;
+                        }
+                    }
+                }
+            }
+    }
+}
+
 // Represents a 2D image in space
 class Sprite
 {
-    constructor(imageView)
+    constructor(imageView=null)
     {
-        if (imageView)
+        if (imageView !== null)
             this.setImageView(imageView);
         else
             this.setCircularHitbox(0);
@@ -147,18 +225,22 @@ class Sprite
         this._spriteLists = [];
         this._destroyed = false;
     }
-
-    // Virtual update function
-    update()
-    {
-    }
     
     destroy()
     {
         for (let list of this._spriteLists)
         {
-            removeFromArray(list._sprites, this);
-            list.length--;
+            if (list.constructor.name === "TileSpriteList")
+            {
+                let x = Math.floor(this.x / TILE_SIZE);
+                let y = Math.floor(this.y / TILE_SIZE);
+                list._sprites[y][x] = null;
+            }
+            else
+            {
+                removeFromArray(list._sprites, this);
+                list.length--;
+            }
         }
         this._spriteLists = [];
         this._destroyed = true;
@@ -304,17 +386,41 @@ class Sprite
     // Checks for collision against a list of sprites
     checkCollisionWithSprites(sprites)
     {
-        for (let sprite of sprites)
-            if (this.checkCollisionWithSprite(sprite))
-                return true;
+        if (sprites.constructor.name === "TileSpriteList")
+        {
+            for (let tile of getNearbyTiles(this.x, this.y, 2 * TILE_SIZE))
+                if (tile.checkCollisionWithSprite(this))
+                    return true;
+        }
+        else
+        {
+            // Normal sprite list collision
+            for (let sprite of sprites)
+                if (this.checkCollisionWithSprite(sprite))
+                    return true;
+        }
         return false;
     }
 
     // Returns a list of sprites which are colliding with this
     getCollisionWithSprites(sprites)
     {
-        let self = this;
-        return sprites.filter(sprite => self.checkCollisionWithSprite(sprite));
+        let collidingWith = [];
+        if (sprites.constructor.name === "TileSpriteList")
+        {
+            // Optimized sprite list collision for tiles
+            for (let tile of getNearbyTiles(this.x, this.y, 2 * TILE_SIZE))
+                if (tile.checkCollisionWithSprite(this))
+                    collidingWith.push(tile);
+        }
+        else
+        {
+            // Normal sprite list collision
+            for (let sprite of sprites)
+                if (this.checkCollisionWithSprite(sprite))
+                collidingWith.push(sprite);
+        }
+        return collidingWith;
     }
 
     // Checks if this sprite is within EXPLOSION_RADIUS of an explosion at x, y

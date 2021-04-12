@@ -78,7 +78,7 @@ class Graphics
         let ctxSaved = false;
 
         // Rotate sprite
-        if (sprite.angle)
+        if (sprite.angle !== 0)
         {
             ctxSaved = true;
             this._ctx.save();

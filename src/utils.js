@@ -8,6 +8,30 @@ class Circle
         this.r = r;
     }
 
+    // Gets the leftmost point of the circle
+    left()
+    {
+        return this.x - this.r;
+    }
+
+    // Gets the rightmost point of the circle
+    right()
+    {
+        return this.x + this.r;
+    }
+
+    // Gets the bottom-most point of the circle
+    bottom()
+    {
+        return this.y - this.r;
+    }
+
+    // Gets the topmost point of the circle
+    top()
+    {
+        return this.y + this.r;
+    }
+
     // Creates a copy of this object
     clone()
     {
@@ -112,6 +136,21 @@ function removeFromArray(array, value)
 {
     let index = array.indexOf(value);
     array.splice(index, 1);
+}
+
+function createArrayWithLen(len, val)
+{
+    let arr = [];
+    resizeArray(arr, len);
+    for (let i = 0; i < len; i++)
+        arr[i] = val;
+    return arr;
+}
+
+function resizeArray(array, size, defaultValue=null)
+{
+    while(array.length < size)
+        array.push(defaultValue);
 }
 
 function randInt(min, maxExcl)

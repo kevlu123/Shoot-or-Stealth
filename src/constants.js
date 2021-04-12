@@ -9,8 +9,8 @@ const GAMEOVER_FILENAME = "img/gameover.png";
 const NEXTLEVEL_FILENAME = "img/nextlevel.png";
 const STEALTHED_FILENAME = "img/stealthed.png";
 const WINSCREEN_FILENAME = "img/winscreen.png";
-const SOLIDCOLOURS_ATLAS_FILENAME = "img/solidcolours.png";
 const HEALTHBAR_FILENAME = "img/healthbar.png";
+const SOLIDCOLOURS_ATLAS_FILENAME = "img/solidcolours.png";
 
 // Bullet properties (where applicable)
 const BULLET_ANGULAR_VELOCITY = -0.3;
@@ -45,7 +45,7 @@ const TERMINAL_VELOCITY = 16;
 const LADDER_SPEED_Y = 1;
 const MAX_GRENADES = 5;
 const CHARACTER_WALK_ANIMATION_FRAMES = 2;
-const CHARACTER_WALK_ANIMATION_FRAME_DURATION = 0.15;
+const CHARACTER_WALK_ANIMATION_FRAME_DURATION = 0.1;
 
 // Enemy AI
 const ENEMY_WALK_INTERVAL_MIN = 0.5;
@@ -65,13 +65,13 @@ const BLOOD_PARTICLE_MIN_SIZE = 1;
 const BLOOD_PARTICLE_MAX_SIZE_EXCL = 5;
 const BLOOD_PARTICLE_LIFETIME = 2;
 
-const EXPLOSION_PARTICLE_COUNT = 60;
+const EXPLOSION_PARTICLE_COUNT = 50;
 const EXPLOSION_PARTICLE_MAX_VEL = 10;
 const EXPLOSION_PARTICLE_LIFETIME = 2;
 const EXPLOSION_PARTICLE_SIZE = 5;
 
 const TILE_PARTICLE_COUNT = 2;
-const TILE_DESTROY_PARTICLE_COUNT = 20;
+const TILE_DESTROY_PARTICLE_COUNT = 6;
 const TILE_PARTICLE_MAX_VEL = 5;
 const TILE_PARTICLE_MIN_SIZE = 2;
 const TILE_PARTICLE_MAX_SIZE_EXCL = 5;
@@ -85,9 +85,10 @@ const GRAVITY_STRENGTH = -0.4;
 const COYOTE_JUMP_TIME = 0.05;
 const CAMERA_LERP = 0.06;
 const FRAME_DURATION = 1 / 60;
-const CRATE_SPAWN_RATE = 0.05;
+const CRATE_SPAWN_RATE = 0.01;
 const TILE_HP = 5;
 const DENSE_WALL_HP = 26;
+const PLAYER2_ATLAS_INDEX_OFFSET = 3;
 
 // Key bindings
 class Key
@@ -149,6 +150,7 @@ class ObjectAtlasIndex
     static SNIPER_GUN_CRATE = 7;
     static GRENADE_GUN_CRATE = 8;
     static HEALTH_CRATE = 9;
+    static BOX = 10;
 }
 
 class SolidColourAtlasIndex
@@ -180,7 +182,8 @@ const DEFAULT_BULLET = {
         0,
         16,
         2
-    )
+    ),
+    playerAtlasIndex: 7
 };
 
 const FAST_BULLET = {
@@ -200,7 +203,8 @@ const FAST_BULLET = {
         0,
         8,
         2
-    )
+    ),
+    playerAtlasIndex: 8
 };
 
 const SNIPER_BULLET = {
@@ -220,7 +224,8 @@ const SNIPER_BULLET = {
         0,
         16,
         2
-    )
+    ),
+    playerAtlasIndex: 6
 };
 
 const GRENADE_BULLET = {
@@ -240,5 +245,6 @@ const GRENADE_BULLET = {
         0,
         8,
         10
-    )
+    ),
+    playerAtlasIndex: 7
 };

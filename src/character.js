@@ -16,13 +16,13 @@ class Character extends PhysicsSprite
         this._isWalking = false;
         this._animationScheduled = false;
         this._animationIndex = 0;
-        this.walkSpeed = PLAYER_WALK_SPEED;
         this._bulletType = bulletType;
+
+        this.walkSpeed = PLAYER_WALK_SPEED;
         this.x = x;
         this.y = y;
         this.useGravity = true;
         this.dampingX = PLAYER_DAMPING_X;
-        this.rotationPivotY--;
         this.setImageView(new ImageView(
             CHARACTER_ATLAS_FILENAME,
             0,
@@ -38,6 +38,8 @@ class Character extends PhysicsSprite
         );
         this.addCollidableSpriteList(levelTiles);
         this.addCollidableSpriteList(entities);
+        
+        this.rotationPivotY = 7;
     }
 
     update()
@@ -259,11 +261,6 @@ class Character extends PhysicsSprite
         this.damage(EXPLOSION_DAMAGE);
     }
 
-    setGun(bulletType)
-    {
-        this._bulletType = bulletType;
-    }
-
     die()
     {
         if (this._dead)
@@ -413,15 +410,19 @@ class Player extends Character
 {
     constructor(playerNumber=0)
     {
+        let atlasIndex = DEFAULT_BULLET.playerAtlasIndex;
+        if (playerNumber === 1)
+            atlasIndex -= PLAYER2_ATLAS_INDEX_OFFSET;
+
         super(
-            playerNumber === 0 ? CharacterAtlasIndex.PLAYER_1_DEFAULT : CharacterAtlasIndex.PLAYER_2_DEFAULT,
+            atlasIndex,
             0,
             0,
             DEFAULT_BULLET,
             true,
             PLAYER_HP
         );
-        this.playerNumber = playerNumber;
+        this._playerNumber = playerNumber;
     }
 
     die()
@@ -452,5 +453,21 @@ class Player extends Character
         this.angle = 0;
         this.dampingX = PLAYER_DAMPING_X;
         this._hitbox.y = 0;
+    }
+
+    setGun(bulletType)
+    {
+        this._bulletType = bulletType;
+        let atlasIndex = bulletType.playerAtlasIndex;
+        if (this._playerNumber === 1)
+            atlasIndex -= PLAYER2_ATLAS_INDEX_OFFSET;
+
+        this.setImageView(new ImageView(
+            CHARACTER_ATLAS_FILENAME,
+            0,
+            TILE_SIZE * atlasIndex,
+            TILE_SIZE,
+            TILE_SIZE
+        ), false);
     }
 }

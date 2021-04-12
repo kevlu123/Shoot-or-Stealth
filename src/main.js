@@ -1,10 +1,15 @@
 
 class GameState
 {
+    // Title screen
     static MENU = 0;
+    // Main gameplay
     static GAMEPLAY = 1;
+    // Waiting for level to load
     static WAITING = 2;
+    // Wait for player to press restart
     static WAIT_FOR_RESTART = 3;
+    // Wait for player to press next level
     static WAIT_FOR_NEXT_LEVEL = 4;
 }
 
@@ -14,14 +19,19 @@ let input = new Input();
 let canvas = null;
 let gfx = null;
 let time = 0;
+let startupTime = Date.now();
+let realTime = Date.now();
+let deltaTime = FRAME_DURATION;
 let gameState = GameState.MENU;
 let levelIndex = 0;
 let stealthing = true;
 let level = null;
 
-// Global sprite groups
-let levelTiles = new SpriteList();
+// Sprite groups
+let levelTiles = new TileSpriteList();
+let updatableTiles = new SpriteList();
 let players = new SpriteList();
+let livingPlayers = new SpriteList();
 let enemies = new SpriteList();
 let bullets = new SpriteList();
 let entities = new SpriteList();
@@ -44,6 +54,7 @@ let grenadeCountSprite = null;
 let healthbarP2 = null;
 let healthbarContentP2 = null;
 let grenadeCountSpriteP2 = null;
+
 
 function isFirstLevel()
 {
@@ -209,13 +220,19 @@ function loadLevel(index)
         player.revive();
     }
 
+    // Reset camera targets
+    livingPlayers.clear();
+    livingPlayers.push(...players);
+
     // Register end tiles
     endTiles.push(...level.getEndTiles());
 
+    // Hide UI screens
     gameoverScreen.alpha = 0;
     nextLevelScreen.alpha = 0;
     stealthedScreen.alpha = 0;
 
+    // Reset stealthing state
     stealthing = true;
 }
 
@@ -226,8 +243,11 @@ function drawLevel()
     for (let tile of backgroundTiles)
         gfx.drawSprite(tile);
 
-    for (let tile of levelTiles)
-        gfx.drawSprite(tile); 
+    // Blow up tiles
+    let dist = Math.floor(Math.max(gfx.width(), gfx.height()) / PIXEL_SIZE / 2 + TILE_SIZE);
+    for (let tile of getNearbyTiles(gfx.x, gfx.y, dist))
+        gfx.drawSprite(tile);
+
     for (let ladder of ladders)
         gfx.drawSprite(ladder);
 
@@ -259,22 +279,24 @@ function drawUI()
         gfx.drawUISprite(healthbarContentP2);
     }
 
+    grenadeCountSprite.pivotX = 0;
+    grenadeCountSprite.y = (w, h) => 0.02 * h + healthbar.rawHeight;
     for (let i = 0; i < players.get(0).getGrenadeCount(); i++)
     {
-        grenadeCountSprite.pivotX = 0;
         grenadeCountSprite.x = (w, h) => 0.01 * h + grenadeCountSprite.rawWidth * i;
-        grenadeCountSprite.y = (w, h) => 0.02 * h + healthbar.rawHeight;
         gfx.drawUISprite(grenadeCountSprite);
     }
 
     if (players.length === 2)
+    {
+        grenadeCountSprite.pivotX = 1;
+        grenadeCountSprite.y = (w, h) => 0.02 * h + healthbar.rawHeight;
         for (let i = 0; i < players.get(1).getGrenadeCount(); i++)
         {
-            grenadeCountSprite.pivotX = 1;
             grenadeCountSprite.x = (w, h) => w - (0.01 * h + grenadeCountSprite.rawWidth * i);
-            grenadeCountSprite.y = (w, h) => 0.02 * h + healthbar.rawHeight;
             gfx.drawUISprite(grenadeCountSprite);
         }
+    }
 
     gfx.drawUISprite(titleScreen);
     gfx.drawUISprite(watermark);
@@ -293,6 +315,7 @@ function addPlayer2()
     player.x = p1.x;
     player.y = p1.y;
     players.push(player);
+    livingPlayers.push(player);
 }
 
 function controlPlayer()
@@ -416,12 +439,25 @@ function updateWaitForNextLevel()
     }
 }
 
+// Logs a message to the console if lag is detected
+function checkForLag()
+{
+    let curTime = (realTime - startupTime) / 1000;
+    if (deltaTime > 1.25 * FRAME_DURATION)
+        console.log(`[${curTime}s] Lagging! Frame took ${deltaTime}s.`);
+}
+
 // Update function
 function onUpdate()
 {
-    // Update current time
+    // Update ggame time
     time += FRAME_DURATION;
 
+    // Update real time
+    let now = Date.now();
+    deltaTime = (now - realTime) / 1000;
+    realTime = now;
+    
     // Call a more specific update function
     switch (gameState)
     {
@@ -430,7 +466,23 @@ function onUpdate()
         case GameState.WAIT_FOR_RESTART:    updateWaitForRestart();   break;
         case GameState.WAIT_FOR_NEXT_LEVEL: updateWaitForNextLevel(); break;
     }
+
+    // Check for lag
+    if (gameState != GameState.MENU && gameState != GameState.WAITING)
+        checkForLag();
     
+    // Update camera targets
+    if (livingPlayers.length === 2)
+    {
+        let p1 = players.get(0);
+        let p2 = players.get(1);
+
+        if (p1.isDead())
+            livingPlayers.remove(p1);
+        else if (p2.isDead())
+            livingPlayers.remove(p2);
+    }
+
     // Update camera position and draw frame
     gfx.update();
     drawLevel();
@@ -449,12 +501,27 @@ function onUpdate()
         enemy.update();
     for (let entity of entities)
         entity.update();
-    for (let tile of levelTiles)
+    for (let tile of updatableTiles)
         tile.update();
     Particle.update();
 
     // Update input
     input.update();
+}
+
+// Gets tiles within a square radius. Parameters are in world coordinates
+function* getNearbyTiles(x, y, dist)
+{
+    x = Math.floor(x / TILE_SIZE);
+    y = Math.floor(y / TILE_SIZE);
+    dist = Math.floor(dist / TILE_SIZE);
+    for (let b = y - dist; b <= y + dist; b++)
+        for (let a = x - dist; a <= x + dist; a++)
+        {
+            let tile = levelTiles.get(a, b);
+            if (tile !== null)
+                yield tile;
+        }
 }
 
 function createExplosion(x, y)
@@ -470,8 +537,9 @@ function createExplosion(x, y)
     };
 
     // Blow up tiles
-    levelTiles.forEach(checkExplosion);
-
+    for (let tile of getNearbyTiles(x, y, EXPLOSION_RADIUS + TILE_SIZE))
+        checkExplosion(tile);
+    
     // Hurt enemies and players
     enemies.forEach(checkExplosion);
     players.forEach(checkExplosion);
@@ -542,7 +610,7 @@ function main()
     // Create graphics
     canvas = document.getElementById("canvas");
     gfx = new Graphics(canvas);
-    gfx.targets = players;
+    gfx.targets = livingPlayers;
 
     function onImagesLoaded()
     {

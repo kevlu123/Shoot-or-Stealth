@@ -20,12 +20,7 @@ class BoxBlock extends Entity
 {
     constructor(x, y)
     {
-        super(x, y, ObjectAtlasIndex.BOMB);
-    }
-
-    onExplosion()
-    {
-        this.destroy();
+        super(x, y, ObjectAtlasIndex.BOX);
     }
 }
 
