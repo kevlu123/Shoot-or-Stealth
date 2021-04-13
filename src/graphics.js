@@ -10,6 +10,10 @@ class Graphics
 
         this.x = 0;
         this.y = 0;
+        this.minY = -99999;
+        this.maxY = 99999;
+        this.minX = -99999;
+        this.maxX = 99999;
         this.targets = [];
 
         this._shakeWaveform = [];
@@ -37,9 +41,18 @@ class Graphics
         this.y = lerp(this.y, targetY, CAMERA_LERP);
 
         // Clamp camera
-        let minY = this.height() / PIXEL_SIZE / 2;
-        if (this.y < minY)
-            this.y = minY; 
+        let borderX = this.width() / PIXEL_SIZE / 2;
+        let borderY = this.height() / PIXEL_SIZE / 2;
+        this.x = clamp(
+            this.x,
+            this.minX + borderX,
+            this.maxX - borderX
+        );
+        this.y = clamp(
+            this.y,
+            this.minY + borderY,
+            this.maxY - borderY
+        );
         
         // Advance shake waveform
         this._shakeWaveform.shift();

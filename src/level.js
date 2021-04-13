@@ -7,6 +7,10 @@ class Level
         // Split string into lines representing rows of tiles
         let lines = data.split("\n");
         lines.reverse();
+
+        // Buffer height
+        for (let i = 0; i < 10; i++)
+            lines.push("");
         
         // Get width and height
         this._width = Math.max(0, ...lines.map(line => line.length))
@@ -16,8 +20,20 @@ class Level
         for (let i = 0; i < lines.length; i++)
             lines[i] = lines[i].padEnd(this._width, ' ');
 
+        // Create left and right border walls
+        for (let y = 0; y < this._height; y++)
+            lines[y] = "B" + lines[y] + "B";
+        this._width += 2;
+
         // Set default spawn and level finish positions
         this._endTiles = new SpriteList();
+
+        // Replace top dirt with grass
+        let notAirBlocks = ['.', ',', 'e', '_', 'm'];
+        for (let y = 0; y < this._height - 1; y++)
+            for (let x = 0; x < this._width; x++)
+                if (lines[y][x] === '.' && !notAirBlocks.includes(lines[y + 1][x]))
+                    lines[y] = changeChar(lines[y], x, '_');
 
         // Load each tile
         let surfaceTiles = new SpriteList();
@@ -48,6 +64,7 @@ class Level
                     // Create entities
                     case 'x': entityClass = BombBlock; break;
                     case 'b': entityClass = BoxBlock;  break;
+                    case 'c': entityClass = randItem(ItemCrate.getCrateTypes()); break;
 
                     // Set start position
                     case 's': this._startPos = [x, y]; break;
@@ -128,5 +145,10 @@ class Level
     getEndTiles()
     {
         return this._endTiles;
+    }
+
+    getWidth()
+    {
+        return this._width;
     }
 }

@@ -223,6 +223,11 @@ function loadLevel(index)
     // Reset camera targets
     livingPlayers.clear();
     livingPlayers.push(...players);
+    
+    // Clamp camera
+    gfx.minX = TILE_SIZE;
+    gfx.minY = 0;
+    gfx.maxX = TILE_SIZE * (level.getWidth() - 1);
 
     // Register end tiles
     endTiles.push(...level.getEndTiles());

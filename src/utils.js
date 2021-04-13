@@ -180,12 +180,8 @@ function wrappedIncrement(val, incr, min, maxExcl)
 }
 
 // Casts a ray and gets a list of sprites that the ray hits
-function raycast(srcX, srcY, angle, collidableSpriteLists, range=100, step=4)
-{
-    // Calculate direction vector
-    let dirX = Math.cos(angle);
-    let dirY = Math.sin(angle);
-    
+function raycast(srcX, srcY, dirX, dirY, collidableSpriteLists, range=100, step=4)
+{    
     // Create sprite for collision test
     let ray = new PhysicsSprite();
     ray.setCircularHitbox(0, 0, 0.01);
@@ -215,4 +211,10 @@ function raycast(srcX, srcY, angle, collidableSpriteLists, range=100, step=4)
 function randItem(array)
 {
     return array[randInt(0, array.length)];
+}
+
+// Change a character in a string
+function changeChar(s, index, c)
+{
+    return s.substring(0, index) + c + s.substring(index + 1);
 }

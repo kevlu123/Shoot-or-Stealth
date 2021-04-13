@@ -46,7 +46,7 @@ const LADDER_SPEED_Y = 1;
 const MAX_GRENADES = 5;
 const CHARACTER_WALK_ANIMATION_FRAMES = 2;
 const CHARACTER_WALK_ANIMATION_FRAME_DURATION = 0.1;
-const OVERKILL_HP = -6;
+const OVERKILL_HP = -8;
 
 // Enemy AI
 const ENEMY_WALK_INTERVAL_MIN = 0.5;
@@ -57,7 +57,8 @@ const ENEMY_SHOOT_INTERVAL_MIN = 0.5;
 const ENEMY_SHOOT_INTERVAL_MAX = 3;
 const ENEMY_SHOOT_DURATION_MIN = 0.3;
 const ENEMY_SHOOT_DURATION_MAX = 0.7;
-const ENEMY_RAYCAST_ANGLE = Math.PI / 3;
+const ENEMY_RAYCAST_DIR_X = Math.cos(Math.PI / 3);
+const ENEMY_RAYCAST_DIR_Y = Math.sin(Math.PI / 3);
 
 // Particles
 const BLOOD_PARTICLE_COUNT = 5;
@@ -86,7 +87,7 @@ const GRAVITY_STRENGTH = -0.4;
 const COYOTE_JUMP_TIME = 0.05;
 const CAMERA_LERP = 0.06;
 const FRAME_DURATION = 1 / 60;
-const CRATE_SPAWN_RATE = 0.01;
+const CRATE_SPAWN_RATE = 0.002;
 const TILE_HP = 5;
 const DENSE_WALL_HP = 26;
 const PLAYER2_ATLAS_INDEX_OFFSET = 3;
@@ -218,7 +219,7 @@ const SNIPER_BULLET = {
 
 const GRENADE_BULLET = {
     cooldown: 0.5,
-    damage: 12,
+    damage: 3,
     velX: 7,
     velY: 5,
     range: null,

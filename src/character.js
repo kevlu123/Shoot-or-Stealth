@@ -289,7 +289,7 @@ class Enemy extends Character
     update()
     {
         // If enemy has seen the player, walk and shoot
-        if (this._triggered)
+        if (this._triggered && !this.isDead())
         {
             if (time >= this._walkTime)
             {
@@ -300,12 +300,11 @@ class Enemy extends Character
                 else if (this.isGrounded())
                 {
                     // Cast a ray in front of enemy
-                    let rayAngle = -Math.PI / 2;
-                    rayAngle += this._walkLeft ? -ENEMY_RAYCAST_ANGLE : ENEMY_RAYCAST_ANGLE;
                     let hits = raycast(
                         this.x + TILE_SIZE / 2,
                         this.y + TILE_SIZE / 2,
-                        rayAngle,
+                        ENEMY_RAYCAST_DIR_X,
+                        ENEMY_RAYCAST_DIR_Y,
                         [levelTiles],
                         TILE_SIZE,
                         TILE_SIZE - 1
@@ -335,14 +334,20 @@ class Enemy extends Character
         else
         {
             // If player is in vision, trigger enemy
-            let hits = raycast(
-                this.x + TILE_SIZE / 2,
-                this.y + TILE_SIZE / 2,
-                this.flippedX ? Math.PI : 0,
-                [levelTiles, players],
-                this._bulletType.range
-            );
-            if (hits.some(hit => players.includes(hit)))
+
+            let hits = new SpriteList();
+            for (let player of players)
+                if (distanceSqr(this.x, this.y, player.x, player.y) < this._bulletType.range ** 2)
+                    hits.push(...raycast(
+                        this.x + TILE_SIZE / 2,
+                        this.y + TILE_SIZE / 2,
+                        this.flippedX ? -1 : 1,
+                        0,
+                        [levelTiles, players],
+                        this._bulletType.range
+                    ));
+
+            if (!this.isDead() && hits.some(hit => players.includes(hit)))
             {
                 this._trigger();
                 this._prepareWalk();
@@ -356,7 +361,8 @@ class Enemy extends Character
     damage(amount)
     {
         super.damage(amount);
-        this._trigger();
+        if (!this.isDead())
+            this._trigger();
         if (this._hp <= OVERKILL_HP)
             this._overkill();
     }
